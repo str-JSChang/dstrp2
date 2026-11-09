@@ -1,17 +1,32 @@
 cmake_minimum_required(VERSION 3.16)
 project(CampusParcelSystem LANGUAGES CXX)
 
-add_executable(parcel_system
-    src/main.cpp
-    src/task1.cpp
-    src/task2.cpp
-    src/task3.cpp
-)
-target_include_directories(parcel_system PRIVATE include)
-target_compile_features(parcel_system PRIVATE cxx_std_17)
-set_target_properties(parcel_system PROPERTIES CXX_EXTENSIONS OFF)
-if(MSVC)
-    target_compile_options(parcel_system PRIVATE /W4)
-else()
-    target_compile_options(parcel_system PRIVATE -Wall -Wextra -Wpedantic)
+add_library(campus_modules src/task1.cpp src/task2.cpp src/task3.cpp)
+target_include_directories(campus_modules PUBLIC include)
+target_compile_features(campus_modules PUBLIC cxx_std_17)
+set_target_properties(campus_modules PROPERTIES CXX_EXTENSIONS OFF)
+
+add_executable(parcel_system src/main.cpp)
+target_link_libraries(parcel_system PRIVATE campus_modules)
+
+include(CTest)
+if(BUILD_TESTING)
+    add_executable(system_tests tests/system_tests.cpp)
+    target_link_libraries(system_tests PRIVATE campus_modules)
+    add_test(NAME system_tests COMMAND system_tests)
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_FOUND)
+        add_test(NAME console_tests COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_console.py $<TARGET_FILE:parcel_system>)
+    endif()
 endif()
+
+foreach(target campus_modules parcel_system system_tests)
+    if(TARGET ${target})
+        if(MSVC)
+            target_compile_options(${target} PRIVATE /W4 /WX)
+        else()
+            target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+        endif()
+    endif()
+endforeach()

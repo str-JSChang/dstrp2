@@ -1,0 +1,7 @@
+# Editor parsing settings for this project's current Windows location.
+CompileFlags:
+  Compiler: C:/msys64/ucrt64/bin/g++.exe
+  Add:
+    - -std=c++17
+    - -xc++
+    - -IC:/DSTR-P2/dstrp2/include

@@ -1,112 +1,86 @@
-# Smart Campus Parcel System - starter skeleton
+# Smart Campus Parcel System
 
-One C++17 console project for three members. Menus, input parsing, model defaults,
-module wiring and safe destructors are implemented. Data-structure algorithms and
-business operations are deliberately unimplemented. Each stub prints
-`Not implemented yet` and returns false/null where applicable. Nothing is saved.
-This is a learning scaffold, not a completed assignment submission.
+Integrated C++17 console prototype for Tasks 1, 2 and 3 of the three-member assignment.
+It uses manually implemented linked structures and coordinated status updates.
+Data lives in memory until the program exits.
 
-## Build and run
+## Build, test and run
 
-From this directory in PowerShell, with GCC on PATH:
+In PowerShell, from this folder:
 
 ```powershell
-New-Item -ItemType Directory -Force build | Out-Null
-g++ -std=c++17 -Wall -Wextra -Wpedantic -I include src/main.cpp src/task1.cpp src/task2.cpp src/task3.cpp -o build/parcel_system.exe
+./build.ps1 -Test
 ./build/parcel_system.exe
 ```
 
-Or with CMake 3.16+ and an installed compiler:
+Requirements: GCC supporting C++17 on PATH; Python 3 for the console tests.
+The script builds with `-Wall -Wextra -Wpedantic -Werror` and stops on failed builds
+or tests. To build only the application, run `./build.ps1`.
+
+Alternative CMake configuration (CMake 3.16+, a C++ compiler):
 
 ```powershell
-cmake -S . -B build
-cmake --build build
+cmake -S . -B build-cmake
+cmake --build build-cmake
+Push-Location build-cmake
+ctest --output-on-failure
+Pop-Location
 ```
 
-The executable is `build/parcel_system.exe` with a single-configuration generator,
-or commonly `build/Debug/parcel_system.exe` with Visual Studio.
+For Visual Studio generators use `cmake --build build-cmake --config Debug` and
+`ctest -C Debug --output-on-failure` from the build directory. The application then
+resides in `build-cmake/Debug/parcel_system.exe`. Python console tests register in
+CTest when Python is found. C++ tests register when BUILD_TESTING is enabled.
+The GCC/PowerShell route was tested here; CMake was not installed on this machine.
 
-## Member responsibilities
+## Work division
 
-| Member | Files | Implementation work |
+| Member | Source | Structures |
 | --- | --- | --- |
-| 1 (you) | `include/task1.hpp`, `src/task1.cpp` | Parcel linked list, intake FIFO queue, registration, lookup, routing and updates |
-| 2 | `include/task2.hpp`, `src/task2.cpp` | Linked priority queue, service requests, priorities and request lifecycle |
-| 3 | `include/task3.hpp`, `src/task3.cpp` | Circular resource list, round-robin allocation and resource lifecycle |
+| 1 | `src/task1.cpp`, `include/task1.hpp` | Parcel linked list and ID-only FIFO intake queue |
+| 2 | `src/task2.cpp`, `include/task2.hpp` | Sorted linked priority queue for service requests |
+| 3 | `src/task3.cpp`, `include/task3.hpp` | Circular resource list with separate per-type allocation cursors |
 
-Shared models are in `include/models.hpp`; menus are in `src/main.cpp`.
-Search for `TODO` and `notImplemented` to locate unfinished work. Add parameter
-names to stub definitions when implementing them. No STL containers substitute
-for the assignment's required structures. Copying owning structures is disabled.
+`include/models.hpp` defines shared records, statuses and printing/time helpers.
+`src/main.cpp` supplies menus and connects the modules.
 
-## Contracts to implement together
+## Presentation and code explanations
 
-- Task 1 owns all parcel records. Intake queue nodes contain IDs, not copies of
-  parcels. Generate parcel IDs and arrival timestamps on registration; reject
-  invalid details and duplicate tracking registrations. Display details and status.
-- Process FIFO intake by peeking first. Collection, delivery, special handling and
-  return routes create corresponding Task 2 requests; investigation puts the parcel
-  on hold. Only dequeue after routing succeeds. Keep the parcel record afterwards.
-- `updateParcel` edits descriptive fields while preserving stored ID, arrival time
-  and current status; use `updateStatus` for validated lifecycle transitions.
-  Completed parcels cannot re-enter intake. Reject updates that break an active
-  request; coordinate lifecycle transitions with Task 2.
-- Remove only cancelled parcels without active requests. Remove their waiting ID
-  too, or skip cancelled/missing/stale entries safely during processing.
-- Task 2 owns requests. Generate request IDs, timestamps and increasing sequence
-  numbers. Sort urgent before normal and equal priorities by creation sequence.
-  Only one active request per parcel. `nextPending` skips other statuses.
-- Keep terminal requests until explicit removal; exclude them from active views.
-  Completing, returning or cancelling updates the associated parcel and releases
-  its resource. Reject repeated terminal operations. Returned parcels get Returned;
-  completed collection/delivery get Collected/Delivered. Special handling completion
-  places the parcel OnHold for the next staff decision. Cancellation sets Cancelled.
-- Task 3 owns resources. Allocate available counters for collection and available
-  delivery personnel for delivery/redelivery. Special handling and returns require
-  a team-defined resource policy before enabling allocation; their allocation
-  currently remains a TODO alongside all other business logic.
-- Assignment must update both the resource and request. Validate all changes before
-  committing; roll back if any dependent change fails. If an occupied resource goes
-  unavailable, clear both assignment references and put its request back to Pending.
-  Manual release of an active assignment likewise returns the request to Pending;
-  releasing after completion must preserve its terminal status. An unassigned
-  terminal request needs no release; invalid request/resource IDs still fail.
-- Borrowed pointers from lookup methods are for immediate inspection only. Do not
-  retain them across deletion. Keep IDs for long-lived cross-module references.
-- Empty collections, unknown IDs and invalid operations must produce clear messages
-  once implemented. The current stubs only announce their unimplemented state.
+Read [the technical and presentation guide](docs/TECHNICAL_GUIDE.md) first for each
+task's requirements, algorithms, complexity, integration rules, timed demonstration,
+Q&A preparation, regression findings and limits.
 
-## Suggested implementation order
+[The line-by-line index](docs/LINE_BY_LINE.md) links to explanations of every physical
+line in the application, headers, tests and build scripts. Source checksums identify
+the exact version explained.
 
-1. Implement each member's structure operations, including empty and one-node cases.
-2. Implement Task 1 registration/search and Task 2 request creation/priority handling.
-3. Implement Task 3 registration/allocation and the shared assignment hooks.
-4. Connect routing, completion, cancellation and resource release; then expand menus
-   or displays if your implementation needs additional information.
+## Quick demonstration
 
-## Manual verification checklist
+1. Register a parcel in Task 1; its generated ID starts at P1.
+2. Process the next parcel for collection with normal priority; R1 is created.
+3. Register counter C1 in Task 3, then assign R1 to a counter.
+4. Process R1 in Task 2, then complete with outcome details and its recipient ID.
+5. Search P1 and display resources: P1 is Collected and C1 is Available.
 
-Already applicable to this scaffold:
+For active requests with missing/held parcels use Task 2 option 9. It closes the
+current request, releases its resource and marks the parcel Missing/OnHold. Recover
+a missing parcel to OnHold in Task 1 before resuming a service. Delivered parcels
+cannot reopen for redelivery; redelivery applies only to unfinished parcels.
 
-- Build with warnings enabled; open each task menu and return to the main menu.
-- Enter blank, alphabetic, out-of-range and mixed input such as `1x`; retry cleanly.
-- Reach an operation and confirm it reports `Not implemented yet`, without claiming success.
-- End console input at any prompt; exit cleanly without an infinite loop.
+## Verification and limits
 
-After implementing algorithms and business rules:
+- 543 C++ checks across eight suites, including 100 object-lifetime cycles.
+- 28 subprocess console scenarios, including a complete collection workflow.
+- GCC warnings treated as errors, with additional `-fanalyzer` review.
+- Regressions cover direct request synchronization, unchanged state on rejected
+  completion, return-to-sender status and rejecting redelivery of delivered parcels.
 
-- Register parcels A/B/C, process in FIFO order and retain all records afterwards.
-- Reject incomplete recipients, duplicate IDs/tracking registrations and unknown IDs.
-- Test queue/list removal at head, middle, tail and the only node; empty operations fail safely.
-- Prioritize an urgent request ahead of normal requests; equal priorities remain FIFO.
-- Reject duplicate active requests, illegal status transitions and repeated completion.
-- Allocate only matching available resources; rotate fairly and stop after one full
-  ring if none are suitable. Test empty and one-resource rings.
-- Test unavailable resources, duplicate assignments, invalid release and interruption
-  of an in-progress assignment. Both sides must stay consistent.
-- Run registration -> routing -> request -> assignment -> processing -> completion.
-  Verify parcel/request statuses and resource availability at every stage.
-- Exercise cancellation, return, missing/on-hold parcels and failed dependent updates.
-  No failed operation may leave partial state changes.
+Tests establish covered behavior, not a guarantee of zero defects. No runtime
+address/leak sanitizer was run. There is no persistence, staff authentication,
+network service or optional Tasks 4 and 5. Recipient-ID matching is a prototype
+collection check, not secure identity verification.
 
-Tasks 4 and 5, file persistence and authentication are outside this scaffold.
+The source follows `dsa_assignment` conventions: include guards, `using namespace std;`,
+camelCase names, four spaces, same-line opening braces, short comments and explicit
+pointer traversal. The reference directory is unchanged. Understand your contribution
+and follow the assignment's individual AI-usage declaration requirements.

@@ -1,60 +1,59 @@
-#pragma once
+#ifndef TASK2_HPP
+#define TASK2_HPP
 
 #include "models.hpp"
+using namespace std;
 
 namespace campus {
-
 class ParcelModule;
 class ResourceModule;
 
-// Member 2: sorted linked priority queue. Urgent first; equal priority uses FIFO.
-// Keep terminal records until explicit removal so repeated processing can be rejected.
-// nextPending skips terminal records; displayActive only displays active requests.
+// Task 2 - urgent first, then arrival sequence within the same priority
 class RequestQueue {
 public:
     RequestQueue() = default;
     ~RequestQueue();
     RequestQueue(const RequestQueue&) = delete;
     RequestQueue& operator=(const RequestQueue&) = delete;
-
     bool insert(const ServiceRequest& request);
-    ServiceRequest* find(const std::string& requestId);
-    const ServiceRequest* find(const std::string& requestId) const;
+    ServiceRequest* find(const string& id);
+    const ServiceRequest* find(const string& id) const;
     const ServiceRequest* nextPending() const;
-    bool remove(const std::string& requestId);
-    bool hasActiveForParcel(const std::string& parcelId) const;
+    bool remove(const string& id);
+    bool hasActiveForParcel(const string& id) const;
     void displayActive() const;
-
 private:
-    struct Node { ServiceRequest value; Node* next{nullptr}; };
-    Node* head_{nullptr};
+    struct Node {
+        ServiceRequest value;
+        Node* next = nullptr;
+    };
+    Node* head = nullptr;
 };
 
 class ServiceModule {
 public:
-    explicit ServiceModule(ParcelModule& parcels) : parcels_(parcels) {}
-
-    bool createRequest(ServiceRequest request); // Generate ID/time/sequence; validate parcel.
+    explicit ServiceModule(ParcelModule& parcels) : parcels(parcels) {}
+    bool createRequest(ServiceRequest request);
     void displayActiveRequests() const;
-    const ServiceRequest* findRequest(const std::string& requestId) const;
+    const ServiceRequest* findRequest(const string& id) const;
     const ServiceRequest* nextRequest() const;
-    bool processRequest(const std::string& requestId);
-    bool completeRequest(const std::string& requestId, RequestStatus outcome,
-                         const std::string& details, ResourceModule& resources);
-    bool cancelRequest(const std::string& requestId, ResourceModule& resources);
-    bool removeTerminalRequest(const std::string& requestId);
-
-    // Integration hooks: Task 1 checks active requests before deletion;
-    // Task 3 updates assignments through this module instead of copying requests.
-    bool hasActiveRequestForParcel(const std::string& parcelId) const;
-    bool attachResource(const std::string& requestId, const std::string& resourceId);
-    bool detachResource(const std::string& requestId);
-
+    bool processRequest(const string& id);
+    bool completeRequest(const string& id, RequestStatus outcome, const string& details,
+                         const string& recipientId, ResourceModule& resources);
+    bool cancelRequest(const string& id, ResourceModule& resources);
+    bool interruptRequest(const string& id, ParcelStatus status, ResourceModule& resources);
+    bool removeTerminalRequest(const string& id);
+    bool hasActiveRequestForParcel(const string& id) const;
 private:
-    ParcelModule& parcels_;
-    RequestQueue requests_;
-    unsigned long long nextRequestNumber_{1};
-    unsigned long long nextSequence_{1};
+    friend class ResourceModule; // only resource allocation can attach a resource
+    bool attachResource(const string& id, const string& resourceId);
+    bool detachResource(const string& id);
+    bool parcelMatches(const ServiceRequest& request) const;
+    ParcelModule& parcels;
+    RequestQueue requests;
+    unsigned long long nextRequestNumber = 1;
+    unsigned long long nextSequence = 1;
 };
 
 } // namespace campus
+#endif

@@ -1,46 +1,50 @@
-#pragma once
+#ifndef TASK3_HPP
+#define TASK3_HPP
 
 #include "models.hpp"
+using namespace std;
 
 namespace campus {
-
 class ServiceModule;
 
-// Member 3: ring with a rotating allocation cursor for round-robin selection.
+// Task 3 - repeat allocation from the node after the last selection
 class ResourceRing {
 public:
     ResourceRing() = default;
     ~ResourceRing();
     ResourceRing(const ResourceRing&) = delete;
     ResourceRing& operator=(const ResourceRing&) = delete;
-
     bool insert(const Resource& resource);
-    Resource* find(const std::string& resourceId);
-    const Resource* find(const std::string& resourceId) const;
-    Resource* nextAvailable(ResourceType type); // Advance cursor only on selection.
+    Resource* find(const string& id);
+    const Resource* find(const string& id) const;
+    Resource* nextAvailable(ResourceType type);
     void display() const;
-
 private:
-    struct Node { Resource value; Node* next{nullptr}; };
-    Node* tail_{nullptr}; // A nonempty ring has tail_->next as its first node.
-    Node* cursor_{nullptr};
+    struct Node {
+        Resource value;
+        Node* next = nullptr;
+    };
+    Node* tail = nullptr;
+    Node* allocationCursor[2] = {nullptr, nullptr};
 };
 
 class ResourceModule {
 public:
-    explicit ResourceModule(ServiceModule& services) : services_(services) {}
-
+    explicit ResourceModule(ServiceModule& services) : services(services) {}
     bool registerResource(Resource resource);
-    bool updateResourceDetails(const std::string& resourceId, const std::string& name);
+    bool updateResourceDetails(const string& id, const string& name);
     void displayAvailability() const;
-    bool assignRequest(const std::string& requestId, ResourceType requiredType);
-    bool releaseResource(const std::string& resourceId);
-    bool updateStatus(const std::string& resourceId, ResourceStatus status);
-    bool releaseForRequest(const std::string& requestId); // Completion/cancellation hook.
-
+    const Resource* findResource(const string& id) const;
+    bool assignRequest(const string& id, ResourceType type);
+    bool releaseResource(const string& id);
+    bool updateStatus(const string& id, ResourceStatus status);
 private:
-    ServiceModule& services_;
-    ResourceRing resources_;
+    friend class ServiceModule;
+    bool canReleaseRequest(const string& id) const;
+    bool releaseForRequest(const string& id);
+    ServiceModule& services;
+    ResourceRing resources;
 };
 
 } // namespace campus
+#endif

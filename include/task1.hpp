@@ -1,68 +1,74 @@
-#pragma once
+#ifndef TASK1_HPP
+#define TASK1_HPP
 
 #include "models.hpp"
-#include <cstddef>
+using namespace std;
 
 namespace campus {
-
 class ServiceModule;
 
-// Member 1: authoritative parcel storage. All core algorithms are TODOs.
+// Task 1 - keep every parcel record, even after it leaves intake
 class ParcelRecords {
 public:
     ParcelRecords() = default;
     ~ParcelRecords();
     ParcelRecords(const ParcelRecords&) = delete;
     ParcelRecords& operator=(const ParcelRecords&) = delete;
-
     bool insert(const Parcel& parcel);
-    Parcel* find(const std::string& parcelId);
-    const Parcel* find(const std::string& parcelId) const;
-    bool remove(const std::string& parcelId);
+    Parcel* find(const string& id);
+    const Parcel* find(const string& id) const;
+    bool hasTrackingNumber(const string& tracking, const string& exceptId = "") const;
+    bool remove(const string& id);
     void display() const;
-
 private:
-    struct Node { Parcel value; Node* next{nullptr}; };
-    Node* head_{nullptr};
+    struct Node {
+        Parcel value;
+        Node* next = nullptr;
+    };
+    Node* head = nullptr;
 };
 
-// Stores IDs only; dequeuing must not delete the corresponding parcel record.
+// only parcel IDs are needed in the waiting queue
 class IntakeQueue {
 public:
     IntakeQueue() = default;
     ~IntakeQueue();
     IntakeQueue(const IntakeQueue&) = delete;
     IntakeQueue& operator=(const IntakeQueue&) = delete;
-
-    bool enqueue(const std::string& parcelId);
-    bool dequeue(std::string& parcelId);
-    bool peek(std::string& parcelId) const;
-    bool empty() const noexcept { return front_ == nullptr; }
+    bool enqueue(const string& id);
+    bool dequeue(string& id);
+    bool peek(string& id) const;
+    bool remove(const string& id);
+    bool empty() const { return front == nullptr; }
     void display() const;
-
 private:
-    struct Node { std::string parcelId; Node* next{nullptr}; };
-    Node* front_{nullptr};
-    Node* rear_{nullptr};
+    struct Node {
+        string parcelId;
+        Node* next = nullptr;
+    };
+    Node* front = nullptr;
+    Node* rear = nullptr;
 };
 
 class ParcelModule {
 public:
-    bool registerParcel(Parcel parcel); // Generate unique ID and arrival time here.
+    bool registerParcel(Parcel parcel);
     void displayParcels() const;
-    const Parcel* findParcel(const std::string& parcelId) const;
-    bool updateParcel(const std::string& parcelId, const Parcel& replacement);
-    bool removeParcel(const std::string& parcelId, const ServiceModule& services);
-    bool processNext(Route route, ServiceModule& services);
+    const Parcel* findParcel(const string& id) const;
+    bool updateParcel(const string& id, Parcel replacement, const ServiceModule& services);
+    bool removeParcel(const string& id, const ServiceModule& services);
+    bool processNext(Route route, ServiceModule& services,
+                     RequestPriority priority = RequestPriority::Normal);
+    bool resumeParcel(const string& id, Route route, ServiceModule& services,
+                      RequestPriority priority = RequestPriority::Normal);
+    bool updateStatus(const string& id, ParcelStatus status, const ServiceModule& services);
     void displayWaiting() const;
-
-    // Integration hook: validate transitions before changing shared parcel state.
-    bool updateStatus(const std::string& parcelId, ParcelStatus status);
-
 private:
-    ParcelRecords records_;
-    IntakeQueue waiting_;
-    unsigned long long nextParcelNumber_{1};
+    friend class ServiceModule; // service lifecycle changes are coordinated here
+    ParcelRecords records;
+    IntakeQueue waiting;
+    unsigned long long nextParcelNumber = 1;
 };
 
 } // namespace campus
+#endif
