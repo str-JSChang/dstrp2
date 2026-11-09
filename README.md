@@ -6,6 +6,18 @@ Data lives in memory until the program exits.
 
 ## Build, test and run
 
+On Linux, open a terminal in the project folder containing `src` and `include`.
+With `g++` installed, compile and run:
+
+```bash
+mkdir -p build
+g++ -std=c++17 -Wall -Wextra -Wpedantic -Werror -I include src/main.cpp src/task1.cpp src/task2.cpp src/task3.cpp -o build/parcel_system
+./build/parcel_system
+```
+
+The `-I include` option lets the compiler find the project's headers.
+Run the compile command again after changing the C++ code.
+
 In PowerShell, from this folder:
 
 ```powershell
@@ -45,6 +57,12 @@ The GCC/PowerShell route was tested here; CMake was not installed on this machin
 `src/main.cpp` supplies menus and connects the modules.
 
 ## Presentation and code explanations
+
+Open [the offline visual guide](docs/VISUAL_GUIDE.html) in your browser for animated,
+step-by-step walkthroughs, interactive data structures, validation examples and all
+16 documentation files in one searchable HTML file. It works on Linux and Windows
+without a server or internet connection. After editing the Markdown docs, regenerate
+it with `python docs/build_visual_guide.py` (requires `pip install markdown`).
 
 For your own Task 1 demonstration, use [the Task 1 rehearsal guide](docs/TASK1_PRESENTATION_GUIDE.md).
 It gives exact code locations, mock data, a five-minute script, validation scenarios
