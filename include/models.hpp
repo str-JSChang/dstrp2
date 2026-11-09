@@ -61,7 +61,9 @@ struct Resource {
 // remove outside whitespace, while leaving spaces inside names alone
 inline string trim(const string& text) {
     size_t first = text.find_first_not_of(" \t\r\n");
-    if (first == string::npos) return "";
+    if (first == string::npos) {
+        return "";
+    }
     size_t last = text.find_last_not_of(" \t\r\n");
     return text.substr(first, last - first + 1);
 }
@@ -96,65 +98,96 @@ inline bool validService(ServiceType type) {
 // the request type determines which parcel status it must have
 inline ParcelStatus serviceStatus(ServiceType type) {
     switch (type) {
-    case ServiceType::Collection: return ParcelStatus::AwaitingCollection;
+    case ServiceType::Collection:
+        return ParcelStatus::AwaitingCollection;
     case ServiceType::CampusDelivery:
-    case ServiceType::Redelivery: return ParcelStatus::AwaitingDelivery;
-    case ServiceType::SpecialHandling: return ParcelStatus::SpecialHandling;
-    case ServiceType::ReturnToSender: return ParcelStatus::ReturnPending;
+    case ServiceType::Redelivery:
+        return ParcelStatus::AwaitingDelivery;
+    case ServiceType::SpecialHandling:
+        return ParcelStatus::SpecialHandling;
+    case ServiceType::ReturnToSender:
+        return ParcelStatus::ReturnPending;
     }
     return ParcelStatus::OnHold;
 }
 
 inline ResourceType serviceResource(ServiceType type) {
-    if (type == ServiceType::Collection) return ResourceType::CollectionCounter;
+    if (type == ServiceType::Collection) {
+        return ResourceType::CollectionCounter;
+    }
     return ResourceType::DeliveryPersonnel;
 }
 
 inline const char* toString(ParcelStatus status) {
     switch (status) {
-    case ParcelStatus::Received: return "Received";
-    case ParcelStatus::AwaitingCollection: return "Awaiting collection";
-    case ParcelStatus::AwaitingDelivery: return "Awaiting delivery";
-    case ParcelStatus::SpecialHandling: return "Special handling";
-    case ParcelStatus::ReturnPending: return "Return pending";
-    case ParcelStatus::OnHold: return "On hold";
-    case ParcelStatus::Missing: return "Missing";
-    case ParcelStatus::Collected: return "Collected";
-    case ParcelStatus::Delivered: return "Delivered";
-    case ParcelStatus::Returned: return "Returned";
-    case ParcelStatus::Cancelled: return "Cancelled";
+    case ParcelStatus::Received:
+        return "Received";
+    case ParcelStatus::AwaitingCollection:
+        return "Awaiting collection";
+    case ParcelStatus::AwaitingDelivery:
+        return "Awaiting delivery";
+    case ParcelStatus::SpecialHandling:
+        return "Special handling";
+    case ParcelStatus::ReturnPending:
+        return "Return pending";
+    case ParcelStatus::OnHold:
+        return "On hold";
+    case ParcelStatus::Missing:
+        return "Missing";
+    case ParcelStatus::Collected:
+        return "Collected";
+    case ParcelStatus::Delivered:
+        return "Delivered";
+    case ParcelStatus::Returned:
+        return "Returned";
+    case ParcelStatus::Cancelled:
+        return "Cancelled";
     }
     return "Unknown";
 }
 
 inline const char* toString(RequestStatus status) {
     switch (status) {
-    case RequestStatus::Pending: return "Pending";
-    case RequestStatus::Assigned: return "Assigned";
-    case RequestStatus::InProgress: return "In progress";
-    case RequestStatus::Completed: return "Completed";
-    case RequestStatus::Cancelled: return "Cancelled";
-    case RequestStatus::Returned: return "Returned";
+    case RequestStatus::Pending:
+        return "Pending";
+    case RequestStatus::Assigned:
+        return "Assigned";
+    case RequestStatus::InProgress:
+        return "In progress";
+    case RequestStatus::Completed:
+        return "Completed";
+    case RequestStatus::Cancelled:
+        return "Cancelled";
+    case RequestStatus::Returned:
+        return "Returned";
     }
     return "Unknown";
 }
 
 inline const char* toString(ServiceType type) {
     switch (type) {
-    case ServiceType::Collection: return "Collection";
-    case ServiceType::CampusDelivery: return "Campus delivery";
-    case ServiceType::SpecialHandling: return "Special handling";
-    case ServiceType::Redelivery: return "Redelivery";
-    case ServiceType::ReturnToSender: return "Return to sender";
+    case ServiceType::Collection:
+        return "Collection";
+    case ServiceType::CampusDelivery:
+        return "Campus delivery";
+    case ServiceType::SpecialHandling:
+        return "Special handling";
+    case ServiceType::Redelivery:
+        return "Redelivery";
+    case ServiceType::ReturnToSender:
+        return "Return to sender";
     }
     return "Unknown";
 }
 
 inline const char* toString(ResourceStatus status) {
     switch (status) {
-    case ResourceStatus::Available: return "Available";
-    case ResourceStatus::Occupied: return "Occupied";
-    case ResourceStatus::Unavailable: return "Unavailable";
+    case ResourceStatus::Available:
+        return "Available";
+    case ResourceStatus::Occupied:
+        return "Occupied";
+    case ResourceStatus::Unavailable:
+        return "Unavailable";
     }
     return "Unknown";
 }
@@ -168,12 +201,27 @@ inline void printParcel(const Parcel& parcel) {
 }
 
 inline void printRequest(const ServiceRequest& request) {
+    string priorityName = "Normal";
+    if (request.priority == RequestPriority::Urgent) {
+        priorityName = "Urgent";
+    }
+
+    string resourceName = "-";
+    if (!request.resourceId.empty()) {
+        resourceName = request.resourceId;
+    }
+
+    string outcomeText = "-";
+    if (!request.outcomeDetails.empty()) {
+        outcomeText = request.outcomeDetails;
+    }
+
     cout << request.id << " | parcel " << request.parcelId << " | " << toString(request.type)
-         << " | " << (request.priority == RequestPriority::Urgent ? "Urgent" : "Normal")
+         << " | " << priorityName
          << " | status " << toString(request.status) << " | recipient " << request.recipientId
          << " | details " << request.serviceDetails << " | created " << request.createdAt
-         << " | resource " << (request.resourceId.empty() ? "-" : request.resourceId)
-         << " | outcome " << (request.outcomeDetails.empty() ? "-" : request.outcomeDetails) << '\n';
+         << " | resource " << resourceName
+         << " | outcome " << outcomeText << '\n';
 }
 
 } // namespace campus

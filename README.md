@@ -46,6 +46,10 @@ The GCC/PowerShell route was tested here; CMake was not installed on this machin
 
 ## Presentation and code explanations
 
+For your own Task 1 demonstration, use [the Task 1 rehearsal guide](docs/TASK1_PRESENTATION_GUIDE.md).
+It gives exact code locations, mock data, a five-minute script, validation scenarios
+and logical questions with suggested answers.
+
 Read [the technical and presentation guide](docs/TECHNICAL_GUIDE.md) first for each
 task's requirements, algorithms, complexity, integration rules, timed demonstration,
 Q&A preparation, regression findings and limits.
@@ -82,5 +86,6 @@ collection check, not secure identity verification.
 
 The source follows `dsa_assignment` conventions: include guards, `using namespace std;`,
 camelCase names, four spaces, same-line opening braces, short comments and explicit
-pointer traversal. The reference directory is unchanged. Understand your contribution
+pointer traversal. The readability revision expands branches and validation, uses
+explicit types and replaces nested conditional expressions with if/else blocks. The reference directory is unchanged. Understand your contribution
 and follow the assignment's individual AI-usage declaration requirements.

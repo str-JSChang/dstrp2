@@ -11,7 +11,9 @@ namespace {
 using namespace campus;
 
 string readText(const char* prompt) {
-    if (!cin) return "";
+    if (!cin) {
+        return "";
+    }
     cout << prompt;
     string text;
     getline(cin, text);
@@ -20,16 +22,44 @@ string readText(const char* prompt) {
 
 // EOF exits menus cleanly; malformed or out-of-range input is retried.
 int choice(const char* prompt, int low, int high) {
-    for (;;) {
+    while (true) {
         const string line = readText(prompt);
-        if (!cin) return 0;
+        if (!cin) {
+            return 0;
+        }
         istringstream input(line);
         int value = 0;
         char extra = '\0';
-        if ((input >> value) && !(input >> extra) && value >= low && value <= high)
-            return value;
-        cout << "Enter a number from " << low << " to " << high << ".\n";
+        // check the number, extra characters and range separately
+        if (!(input >> value)) {
+            cout << "Enter a number from " << low << " to " << high << ".\n";
+            continue;
+        }
+        if (input >> extra) {
+            cout << "Enter one number without extra characters.\n";
+            continue;
+        }
+        if (value < low || value > high) {
+            cout << "Enter a number from " << low << " to " << high << ".\n";
+            continue;
+        }
+        return value;
     }
+}
+
+// return false when staff cancel or input ends
+bool readPriority(RequestPriority& priority) {
+    int selection = choice("1. Urgent\n2. Normal\n0. Cancel\nPriority: ", 0, 2);
+    if (selection == 0) {
+        return false;
+    }
+    if (selection == 1) {
+        priority = RequestPriority::Urgent;
+    }
+    else {
+        priority = RequestPriority::Normal;
+    }
+    return true;
 }
 
 Parcel readParcelDetails() {
@@ -45,8 +75,12 @@ Parcel readParcelDetails() {
 }
 
 void showResult(bool success) {
-    if (success) cout << "Operation successful.\n";
-    else cout << "Operation failed; see the reason above.\n";
+    if (success) {
+        cout << "Operation successful.\n";
+    }
+    else {
+        cout << "Operation failed; see the reason above.\n";
+    }
 }
 
 void parcelMenu(ParcelModule& parcels, ServiceModule& services) {
@@ -57,51 +91,80 @@ void parcelMenu(ParcelModule& parcels, ServiceModule& services) {
             "4. Process next waiting parcel\n5. Update parcel details\n"
             "6. Remove cancelled parcel\n7. Display waiting queue\n"
             "8. Report missing / place on hold\n9. Resume held/recovered parcel\n0. Back\nChoice: ", 0, 9);
-        if (action == 0) return;
+        if (action == 0) {
+            return;
+        }
         switch (action) {
         case 1: {
             const Parcel parcel = readParcelDetails();
-            if (cin) showResult(parcels.registerParcel(parcel));
+            if (cin) {
+                showResult(parcels.registerParcel(parcel));
+            }
             break;
         }
-        case 2: parcels.displayParcels(); break;
+        case 2:
+            parcels.displayParcels();
+            break;
         case 3: {
-            const auto id = readText("Parcel ID: ");
+            const string id = readText("Parcel ID: ");
             if (cin) {
-                if (const Parcel* parcel = parcels.findParcel(id))
+                const Parcel* parcel = parcels.findParcel(id);
+                if (parcel != nullptr) {
                     printParcel(*parcel);
+                }
             }
             break;
         }
         case 4: {
             const int route = choice("1. Collection\n2. Campus delivery\n3. Special handling\n"
                                      "4. Return to sender\n5. Investigation hold\n0. Cancel\nRoute: ", 0, 5);
-            if (route) {
-                int priority = route == 5 ? 2 : choice("1. Urgent\n2. Normal\n0. Cancel\nPriority: ", 0, 2);
-                if (priority) showResult(parcels.processNext(static_cast<Route>(route - 1), services,
-                    priority == 1 ? RequestPriority::Urgent : RequestPriority::Normal));
+            if (route == 0) {
+                break;
             }
+            RequestPriority priority = RequestPriority::Normal;
+            if (route != 5) {
+                if (!readPriority(priority)) {
+                    break;
+                }
+            }
+            Route selectedRoute = static_cast<Route>(route - 1);
+            bool success = parcels.processNext(selectedRoute, services, priority);
+            showResult(success);
             break;
         }
         case 5: {
-            const auto id = readText("Parcel ID to update: ");
+            const string id = readText("Parcel ID to update: ");
             Parcel replacement = readParcelDetails();
             replacement.id = id;
-            if (cin) showResult(parcels.updateParcel(id, replacement, services));
+            if (cin) {
+                showResult(parcels.updateParcel(id, replacement, services));
+            }
             break;
         }
         case 6: {
-            const auto id = readText("Cancelled parcel ID to remove: ");
-            if (cin) showResult(parcels.removeParcel(id, services));
+            const string id = readText("Cancelled parcel ID to remove: ");
+            if (cin) {
+                showResult(parcels.removeParcel(id, services));
+            }
             break;
         }
-        case 7: parcels.displayWaiting(); break;
+        case 7:
+            parcels.displayWaiting();
+            break;
         case 8: {
-            const auto id = readText("Parcel ID: ");
+            const string id = readText("Parcel ID: ");
             const int state = choice("1. Missing\n2. On hold / recovered\n3. Cancel parcel\n0. Back\nStatus: ", 0, 3);
-            if (state) {
-                ParcelStatus status = state == 1 ? ParcelStatus::Missing
-                    : state == 2 ? ParcelStatus::OnHold : ParcelStatus::Cancelled;
+            if (state != 0) {
+                ParcelStatus status;
+                if (state == 1) {
+                    status = ParcelStatus::Missing;
+                }
+                else if (state == 2) {
+                    status = ParcelStatus::OnHold;
+                }
+                else {
+                    status = ParcelStatus::Cancelled;
+                }
                 showResult(parcels.updateStatus(id, status, services));
                 cout << "For an active request, use Task 2 interruption/cancellation first.\n";
             }
@@ -110,9 +173,16 @@ void parcelMenu(ParcelModule& parcels, ServiceModule& services) {
         case 9: {
             const string id = readText("Parcel ID to resume: ");
             int route = choice("1. Collection\n2. Campus delivery\n3. Special handling\n4. Return to sender\n0. Cancel\nRoute: ", 0, 4);
-            int priority = route ? choice("1. Urgent\n2. Normal\n0. Cancel\nPriority: ", 0, 2) : 0;
-            if (route && priority) showResult(parcels.resumeParcel(id, static_cast<Route>(route - 1), services,
-                priority == 1 ? RequestPriority::Urgent : RequestPriority::Normal));
+            if (route == 0) {
+                break;
+            }
+            RequestPriority priority;
+            if (!readPriority(priority)) {
+                break;
+            }
+            Route selectedRoute = static_cast<Route>(route - 1);
+            bool success = parcels.resumeParcel(id, selectedRoute, services, priority);
+            showResult(success);
             break;
         }
         }
@@ -126,7 +196,9 @@ void serviceMenu(ServiceModule& services, ResourceModule& resources) {
             "3. View next request\n4. Process request\n5. Complete / return request\n"
             "6. Cancel request\n7. Remove terminal request\n8. Search request\n"
             "9. Interrupt request: missing / hold\n0. Back\nChoice: ", 0, 9);
-        if (action == 0) return;
+        if (action == 0) {
+            return;
+        }
         switch (action) {
         case 1: {
             ServiceRequest request;
@@ -135,57 +207,92 @@ void serviceMenu(ServiceModule& services, ResourceModule& resources) {
             request.serviceDetails = readText("Service details: ");
             const int type = choice("1. Collection\n2. Campus delivery\n3. Special handling\n"
                                     "4. Redelivery\n5. Return to sender\n0. Cancel\nService: ", 0, 5);
-            if (!type) break;
+            if (type == 0) {
+                break;
+            }
             request.type = static_cast<ServiceType>(type - 1);
-            const int priority = choice("1. Urgent\n2. Normal\n0. Cancel\nPriority: ", 0, 2);
-            if (!priority) break;
-            request.priority = priority == 1 ? RequestPriority::Urgent : RequestPriority::Normal;
+            if (!readPriority(request.priority)) {
+                break;
+            }
             showResult(services.createRequest(request));
             break;
         }
-        case 2: services.displayActiveRequests(); break;
-        case 3:
-            if (const auto* request = services.nextRequest())
-                cout << "Next request: " << request->id << '\n';
+        case 2:
+            services.displayActiveRequests();
             break;
+        case 3: {
+            const ServiceRequest* request = services.nextRequest();
+            if (request != nullptr) {
+                cout << "Next request: " << request->id << '\n';
+            }
+            break;
+        }
         case 4: {
-            const auto id = readText("Request ID: ");
-            if (cin) showResult(services.processRequest(id));
+            const string id = readText("Request ID: ");
+            if (cin) {
+                showResult(services.processRequest(id));
+            }
             break;
         }
         case 5: {
-            const auto id = readText("Request ID: ");
+            const string id = readText("Request ID: ");
             const int outcome = choice("1. Completed\n2. Returned\n0. Cancel\nOutcome: ", 0, 2);
-            if (!outcome) break;
-            const auto details = readText("Completion / return details: ");
+            if (outcome == 0) {
+                break;
+            }
+            const string details = readText("Completion / return details: ");
             const string recipientId = readText("Verify recipient ID: ");
-            if (cin) showResult(services.completeRequest(id, outcome == 1 ? RequestStatus::Completed : RequestStatus::Returned,
-                                                        details, recipientId, resources));
+            if (cin) {
+                RequestStatus finalStatus;
+                if (outcome == 1) {
+                    finalStatus = RequestStatus::Completed;
+                }
+                else {
+                    finalStatus = RequestStatus::Returned;
+                }
+                bool success = services.completeRequest(id, finalStatus, details, recipientId, resources);
+                showResult(success);
+            }
             break;
         }
         case 6: {
-            const auto id = readText("Request ID to cancel: ");
-            if (cin) showResult(services.cancelRequest(id, resources));
+            const string id = readText("Request ID to cancel: ");
+            if (cin) {
+                showResult(services.cancelRequest(id, resources));
+            }
             break;
         }
         case 7: {
-            const auto id = readText("Terminal request ID to remove: ");
-            if (cin) showResult(services.removeTerminalRequest(id));
+            const string id = readText("Terminal request ID to remove: ");
+            if (cin) {
+                showResult(services.removeTerminalRequest(id));
+            }
             break;
         }
         case 8: {
-            const auto id = readText("Request ID: ");
+            const string id = readText("Request ID: ");
             if (cin) {
-                if (const auto* request = services.findRequest(id))
+                const ServiceRequest* request = services.findRequest(id);
+                if (request != nullptr) {
                     printRequest(*request);
+                }
             }
             break;
         }
         case 9: {
             const string id = readText("Request ID to interrupt: ");
             int status = choice("1. Missing\n2. Investigation hold\n0. Back\nParcel status: ", 0, 2);
-            if (status) showResult(services.interruptRequest(id,
-                status == 1 ? ParcelStatus::Missing : ParcelStatus::OnHold, resources));
+            if (status != 0) {
+                ParcelStatus parcelStatus;
+                if (status == 1) {
+                    parcelStatus = ParcelStatus::Missing;
+                }
+                else {
+                    parcelStatus = ParcelStatus::OnHold;
+                }
+                bool success = services.interruptRequest(id, parcelStatus, resources);
+                showResult(success);
+            }
             break;
         }
         }
@@ -198,40 +305,54 @@ void resourceMenu(ResourceModule& resources) {
             "\nTASK 3 - RESOURCES\n1. Register resource\n2. Display availability\n"
             "3. Assign request\n4. Release resource\n5. Update resource status\n"
             "6. Update resource name\n0. Back\nChoice: ", 0, 6);
-        if (action == 0) return;
+        if (action == 0) {
+            return;
+        }
         switch (action) {
         case 1: {
             Resource resource;
             resource.id = readText("Unique resource ID: ");
             resource.name = readText("Counter / personnel name: ");
             const int type = choice("1. Collection counter\n2. Delivery personnel\n0. Cancel\nType: ", 0, 2);
-            if (!type) break;
+            if (type == 0) {
+                break;
+            }
             resource.type = static_cast<ResourceType>(type - 1);
             showResult(resources.registerResource(resource));
             break;
         }
-        case 2: resources.displayAvailability(); break;
+        case 2:
+            resources.displayAvailability();
+            break;
         case 3: {
-            const auto id = readText("Request ID: ");
+            const string id = readText("Request ID: ");
             const int type = choice("1. Collection counter\n2. Delivery personnel\n0. Cancel\nRequired type: ", 0, 2);
-            if (type) showResult(resources.assignRequest(id, static_cast<ResourceType>(type - 1)));
+            if (type != 0) {
+                showResult(resources.assignRequest(id, static_cast<ResourceType>(type - 1)));
+            }
             break;
         }
         case 4: {
-            const auto id = readText("Resource ID: ");
-            if (cin) showResult(resources.releaseResource(id));
+            const string id = readText("Resource ID: ");
+            if (cin) {
+                showResult(resources.releaseResource(id));
+            }
             break;
         }
         case 5: {
-            const auto id = readText("Resource ID: ");
+            const string id = readText("Resource ID: ");
             const int status = choice("1. Available\n2. Occupied\n3. Unavailable\n0. Cancel\nStatus: ", 0, 3);
-            if (status) showResult(resources.updateStatus(id, static_cast<ResourceStatus>(status - 1)));
+            if (status != 0) {
+                showResult(resources.updateStatus(id, static_cast<ResourceStatus>(status - 1)));
+            }
             break;
         }
         case 6: {
-            const auto id = readText("Resource ID: ");
-            const auto name = readText("New name: ");
-            if (cin) showResult(resources.updateResourceDetails(id, name));
+            const string id = readText("Resource ID: ");
+            const string name = readText("New name: ");
+            if (cin) {
+                showResult(resources.updateResourceDetails(id, name));
+            }
             break;
         }
         }
@@ -248,10 +369,18 @@ int runSystem() {
     while (cin) {
         const int action = choice("\n1. Task 1 - Parcel intake\n2. Task 2 - Services\n"
                                   "3. Task 3 - Resources\n0. Exit\nChoice: ", 0, 3);
-        if (action == 0) break;
-        if (action == 1) parcelMenu(parcels, services);
-        if (action == 2) serviceMenu(services, resources);
-        if (action == 3) resourceMenu(resources);
+        if (action == 0) {
+            break;
+        }
+        if (action == 1) {
+            parcelMenu(parcels, services);
+        }
+        if (action == 2) {
+            serviceMenu(services, resources);
+        }
+        if (action == 3) {
+            resourceMenu(resources);
+        }
     }
     cout << "Goodbye.\n";
     return 0;

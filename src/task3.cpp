@@ -20,8 +20,10 @@ ResourceRing::~ResourceRing() {
 }
 
 bool ResourceRing::insert(const Resource& resource) {
-    if (trim(resource.id).empty() || find(resource.id) != nullptr) return false;
-    Node* node = new Node{resource, nullptr};
+    if (trim(resource.id).empty() || find(resource.id) != nullptr) {
+        return false;
+    }
+    Node* node = new Node{resource}; // next is initialized to nullptr
     if (tail == nullptr) {
         node->next = node;
         allocationCursor[0] = node;
@@ -36,29 +38,47 @@ bool ResourceRing::insert(const Resource& resource) {
 }
 
 Resource* ResourceRing::find(const string& id) {
-    if (tail == nullptr) return nullptr;
+    if (tail == nullptr) {
+        return nullptr;
+    }
     Node* current = tail->next;
     do {
-        if (current->value.id == id) return &current->value;
+        if (current->value.id == id) {
+            return &current->value;
+        }
         current = current->next;
     } while (current != tail->next);
     return nullptr;
 }
 
 const Resource* ResourceRing::find(const string& id) const {
-    if (tail == nullptr) return nullptr;
+    if (tail == nullptr) {
+        return nullptr;
+    }
     const Node* current = tail->next;
     do {
-        if (current->value.id == id) return &current->value;
+        if (current->value.id == id) {
+            return &current->value;
+        }
         current = current->next;
     } while (current != tail->next);
     return nullptr;
 }
 
 Resource* ResourceRing::nextAvailable(ResourceType type) {
-    if (tail == nullptr || (type != ResourceType::CollectionCounter
-        && type != ResourceType::DeliveryPersonnel)) return nullptr;
-    int index = type == ResourceType::CollectionCounter ? 0 : 1;
+    if (tail == nullptr) {
+        return nullptr;
+    }
+    if (type != ResourceType::CollectionCounter && type != ResourceType::DeliveryPersonnel) {
+        return nullptr;
+    }
+    int index;
+    if (type == ResourceType::CollectionCounter) {
+        index = 0;
+    }
+    else {
+        index = 1;
+    }
     Node* start = allocationCursor[index];
     Node* current = start;
     do {
@@ -79,10 +99,16 @@ void ResourceRing::display() const {
     const Node* current = tail->next;
     do {
         const Resource& resource = current->value;
-        cout << resource.id << " | " << resource.name << " | "
-             << (resource.type == ResourceType::CollectionCounter ? "Counter" : "Delivery personnel")
-             << " | " << toString(resource.status) << " | request "
-             << (resource.assignedRequestId.empty() ? "-" : resource.assignedRequestId) << '\n';
+        string typeName = "Delivery personnel";
+        if (resource.type == ResourceType::CollectionCounter) {
+            typeName = "Counter";
+        }
+        string requestId = "-";
+        if (!resource.assignedRequestId.empty()) {
+            requestId = resource.assignedRequestId;
+        }
+        cout << resource.id << " | " << resource.name << " | " << typeName
+             << " | " << toString(resource.status) << " | request " << requestId << '\n';
         current = current->next;
     } while (current != tail->next);
 }
@@ -90,9 +116,16 @@ void ResourceRing::display() const {
 bool ResourceModule::registerResource(Resource resource) {
     resource.id = trim(resource.id);
     resource.name = trim(resource.name);
-    if (resource.id.empty() || resource.name.empty() || resources.find(resource.id) != nullptr
-        || (resource.type != ResourceType::CollectionCounter && resource.type != ResourceType::DeliveryPersonnel)) {
-        cout << "Resource needs a unique ID, name and valid type.\n";
+    if (resource.id.empty() || resource.name.empty()) {
+        cout << "Resource ID and name are required.\n";
+        return false;
+    }
+    if (resources.find(resource.id) != nullptr) {
+        cout << "Duplicate resource ID.\n";
+        return false;
+    }
+    if (resource.type != ResourceType::CollectionCounter && resource.type != ResourceType::DeliveryPersonnel) {
+        cout << "Invalid resource type.\n";
         return false;
     }
     resource.status = ResourceStatus::Available;
@@ -117,16 +150,27 @@ void ResourceModule::displayAvailability() const {
 
 const Resource* ResourceModule::findResource(const string& id) const {
     const Resource* resource = resources.find(id);
-    if (resource == nullptr) cout << "Resource not found.\n";
+    if (resource == nullptr) {
+        cout << "Resource not found.\n";
+    }
     return resource;
 }
 
 bool ResourceModule::assignRequest(const string& id, ResourceType type) {
     const ServiceRequest* request = services.findRequest(id);
-    if (request == nullptr || request->status != RequestStatus::Pending
-        || !request->resourceId.empty() || !services.parcelMatches(*request)
-        || type != serviceResource(request->type)) {
-        cout << "Invalid request state or incompatible resource type.\n";
+    if (request == nullptr) {
+        return false; // findRequest already explains the missing ID
+    }
+    if (request->status != RequestStatus::Pending || !request->resourceId.empty()) {
+        cout << "Only pending, unassigned requests can receive a resource.\n";
+        return false;
+    }
+    if (!services.parcelMatches(*request)) {
+        cout << "Parcel details or status do not match the request.\n";
+        return false;
+    }
+    if (type != serviceResource(request->type)) {
+        cout << "Resource type does not match the requested service.\n";
         return false;
     }
     string requestId = request->id;
@@ -135,7 +179,9 @@ bool ResourceModule::assignRequest(const string& id, ResourceType type) {
         cout << "No suitable resource is available.\n";
         return false;
     }
-    if (!services.attachResource(id, resource->id)) return false;
+    if (!services.attachResource(id, resource->id)) {
+        return false;
+    }
     resource->assignedRequestId.swap(requestId);
     resource->status = ResourceStatus::Occupied;
     cout << "Assigned resource " << resource->id << " to request " << id << ".\n";
@@ -144,20 +190,43 @@ bool ResourceModule::assignRequest(const string& id, ResourceType type) {
 
 bool ResourceModule::canReleaseRequest(const string& id) const {
     const ServiceRequest* request = services.findRequest(id);
-    if (request == nullptr) return false;
-    if (request->resourceId.empty()) return request->status == RequestStatus::Pending;
+    if (request == nullptr) {
+        return false;
+    }
+    if (request->resourceId.empty()) {
+        return request->status == RequestStatus::Pending;
+    }
     const Resource* resource = resources.find(request->resourceId);
-    return resource != nullptr && resource->status == ResourceStatus::Occupied
-        && resource->assignedRequestId == id && resource->type == serviceResource(request->type)
-        && (request->status == RequestStatus::Assigned || request->status == RequestStatus::InProgress);
+    if (resource == nullptr) {
+        return false;
+    }
+    if (resource->status != ResourceStatus::Occupied) {
+        return false;
+    }
+    if (resource->assignedRequestId != id) {
+        return false;
+    }
+    if (resource->type != serviceResource(request->type)) {
+        return false;
+    }
+    if (request->status != RequestStatus::Assigned && request->status != RequestStatus::InProgress) {
+        return false;
+    }
+    return true;
 }
 
 bool ResourceModule::releaseForRequest(const string& id) {
-    if (!canReleaseRequest(id)) return false;
+    if (!canReleaseRequest(id)) {
+        return false;
+    }
     const ServiceRequest* request = services.findRequest(id);
-    if (request->resourceId.empty()) return true; // cancelling a pending request needs no resource
+    if (request->resourceId.empty()) {
+        return true; // cancelling a pending request needs no resource
+    }
     Resource* resource = resources.find(request->resourceId);
-    if (!services.detachResource(id)) return false;
+    if (!services.detachResource(id)) {
+        return false;
+    }
     resource->assignedRequestId.clear();
     resource->status = ResourceStatus::Available;
     return true;
@@ -165,9 +234,12 @@ bool ResourceModule::releaseForRequest(const string& id) {
 
 bool ResourceModule::releaseResource(const string& id) {
     Resource* resource = resources.find(id);
-    if (resource == nullptr || resource->status != ResourceStatus::Occupied
-        || resource->assignedRequestId.empty()) {
-        cout << "Resource is invalid or has no active assignment.\n";
+    if (resource == nullptr) {
+        cout << "Resource not found.\n";
+        return false;
+    }
+    if (resource->status != ResourceStatus::Occupied || resource->assignedRequestId.empty()) {
+        cout << "Resource has no active assignment.\n";
         return false;
     }
     string requestId = resource->assignedRequestId;
@@ -176,17 +248,26 @@ bool ResourceModule::releaseResource(const string& id) {
 
 bool ResourceModule::updateStatus(const string& id, ResourceStatus status) {
     Resource* resource = resources.find(id);
-    if (resource == nullptr || (status != ResourceStatus::Available && status != ResourceStatus::Occupied
-        && status != ResourceStatus::Unavailable)) {
-        cout << "Invalid resource or status.\n";
+    if (resource == nullptr) {
+        cout << "Resource not found.\n";
+        return false;
+    }
+    bool validStatus = status == ResourceStatus::Available || status == ResourceStatus::Occupied
+        || status == ResourceStatus::Unavailable;
+    if (!validStatus) {
+        cout << "Invalid resource status.\n";
         return false;
     }
     if (status == ResourceStatus::Occupied) {
-        if (resource->status == ResourceStatus::Occupied && canReleaseRequest(resource->assignedRequestId)) return true;
+        if (resource->status == ResourceStatus::Occupied && canReleaseRequest(resource->assignedRequestId)) {
+            return true;
+        }
         cout << "Assign a request before marking a resource occupied.\n";
         return false;
     }
-    if (resource->status == ResourceStatus::Occupied && !releaseResource(id)) return false;
+    if (resource->status == ResourceStatus::Occupied && !releaseResource(id)) {
+        return false;
+    }
     resource->status = status;
     return true;
 }

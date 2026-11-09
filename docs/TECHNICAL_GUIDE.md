@@ -438,7 +438,48 @@ owning structures cannot be shallow-copied.
 **Does testing guarantee an A+ or zero mistakes?** No. Tests establish covered behavior.
 Marks depend on the rubric and each member's ability to trace, justify and modify code.
 
-## 10. Preparation
+## 10. Reading the expanded syntax
+
+The readability revision keeps the same data structures, lifecycle rules and
+asymptotic complexity. It uses braces for branches, explicit types instead of auto,
+and separate checks with specific messages. Display labels and menu enum values
+are selected through ordinary if/else blocks rather than conditional expressions.
+
+The shared readPriority helper reads a choice, returns false on Cancel/EOF, and
+writes the selected RequestPriority through its reference argument on success.
+Its callers check that result before using the priority. Investigation holds do
+not ask for a priority because they do not create service requests.
+
+A lookup now declares its result first, then checks it separately:
+
+```cpp
+const Parcel* parcel = parcels.findParcel(id);
+if (parcel != nullptr) {
+    printParcel(*parcel);
+}
+```
+
+Node allocation intentionally retains initialization of the stored data:
+
+```cpp
+Node* node = new Node{parcel};
+node->next = head;
+head = node;
+```
+
+The braces after Node initialize the node's Parcel value during allocation. If
+copying a parcel string throws, C++ releases that new allocation automatically.
+The next pointer starts with its in-class nullptr default; the following line
+explicitly connects it to the old head. Allocating an empty node and assigning
+its record afterwards would need an extra exception handler to avoid a leak.
+The initializer is a small piece of syntax worth understanding rather than removing.
+
+Destructors, const references, scoped enums, deleted copying and private integration
+hooks remain because they protect ownership and consistency. The longer formatting
+makes execution order visible; it does not remove validation or change FIFO,
+priority ordering, per-type round robin or the validate-before-release rule.
+
+## 11. Preparation
 
 Read your header and implementation together. Draw three-node examples; trace
 head/front/rear/cursor changes. Practice one successful path and one rejection.

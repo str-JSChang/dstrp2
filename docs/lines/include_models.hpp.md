@@ -2,7 +2,7 @@
 
 Source: [include/models.hpp](../../include/models.hpp)
 
-Physical lines: 180; SHA-256 (LF text): `14ddba7cf8f34eca6ed65a9d6e74145208d904bb86ad2eb135856540190ded8d`.
+Physical lines: 228; SHA-256 (LF text): `d5fa672eaea3c051c5e938e9bfb73992b25aa17eff99ffc8e123025e4b633417`.
 
 The explanations accompany the exact lines below. Pointer algorithms and cross-module state rules are expanded in the [technical guide](../TECHNICAL_GUIDE.md).
 
@@ -71,120 +71,168 @@ The explanations accompany the exact lines below. Pointer algorithms and cross-m
 | 61 | <code>// remove outside whitespace, while leaving spaces inside names alone</code> | Comment explaining intent: remove outside whitespace, while leaving spaces inside names alone |
 | 62 | <code>inline string trim(const string&amp; text) {</code> | Define `trim`. Return the non-whitespace interior of a string, or an empty string if it contains only outside whitespace. |
 | 63 | <code>    size_t first = text.find_first_not_of(&quot; \t\r\n&quot;);</code> | Declare member `first` using the type and initializer shown. It belongs to each instance of the enclosing type. |
-| 64 | <code>    if (first == string::npos) return &quot;&quot;;</code> | Test `first == string::npos`. Return the value of `""` to the caller. This ends the function once its full return expression is evaluated. |
-| 65 | <code>    size_t last = text.find_last_not_of(&quot; \t\r\n&quot;);</code> | Declare member `last` using the type and initializer shown. It belongs to each instance of the enclosing type. |
-| 66 | <code>    return text.substr(first, last - first + 1);</code> | Return the value of `text.substr(first, last - first + 1)` to the caller. This ends the function once its full return expression is evaluated. |
-| 67 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 68 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 69 | <code>inline string currentTimestamp() {</code> | Define `currentTimestamp`. Produce the local YYYY-MM-DD HH:MM:SS arrival/request timestamp using the correct Windows/POSIX localtime function. |
-| 70 | <code>    time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());</code> | Declare member `now` using the type and initializer shown. It belongs to each instance of the enclosing type. |
-| 71 | <code>    tm local = {};</code> | Declare member `local` using the type and initializer shown. It belongs to each instance of the enclosing type. |
-| 72 | <code>#ifdef _WIN32</code> | Select Windows-specific local-time conversion when compiled for Windows. |
-| 73 | <code>    localtime_s(&amp;local, &amp;now);</code> | Call `localtime_s` with the shown arguments. The call performs its named operation within currentTimestamp. |
-| 74 | <code>#else</code> | Use the POSIX local-time conversion on non-Windows platforms. |
-| 75 | <code>    localtime_r(&amp;now, &amp;local);</code> | Call `localtime_r` with the shown arguments. The call performs its named operation within currentTimestamp. |
-| 76 | <code>#endif</code> | End the conditional preprocessing block; preprocessing itself does not run at program runtime. |
-| 77 | <code>    ostringstream stamp;</code> | Declare member `stamp` using the type and initializer shown. It belongs to each instance of the enclosing type. |
-| 78 | <code>    stamp &lt;&lt; put_time(&amp;local, &quot;%Y-%m-%d %H:%M:%S&quot;);</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 79 | <code>    return stamp.str();</code> | Return the value of `stamp.str()` to the caller. This ends the function once its full return expression is evaluated. |
-| 80 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 81 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 82 | <code>inline bool isTerminal(ParcelStatus status) {</code> | Define `isTerminal`. Recognize the four parcel states that must never reopen. |
-| 83 | <code>    return status == ParcelStatus::Collected &#124;&#124; status == ParcelStatus::Delivered</code> | Return the value of `status == ParcelStatus::Collected &#124;&#124; status == ParcelStatus::Delivered` to the caller. This ends the function once its full return expression is evaluated. |
-| 84 | <code>        &#124;&#124; status == ParcelStatus::Returned &#124;&#124; status == ParcelStatus::Cancelled;</code> | Continue the preceding short-circuit boolean expression with an alternative accepted/rejected condition (OR). |
-| 85 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 86 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 87 | <code>inline bool isActive(RequestStatus status) {</code> | Define `isActive`. Recognize the three request states that still count as active work. |
-| 88 | <code>    return status == RequestStatus::Pending &#124;&#124; status == RequestStatus::Assigned</code> | Return the value of `status == RequestStatus::Pending &#124;&#124; status == RequestStatus::Assigned` to the caller. This ends the function once its full return expression is evaluated. |
-| 89 | <code>        &#124;&#124; status == RequestStatus::InProgress;</code> | Continue the preceding short-circuit boolean expression with an alternative accepted/rejected condition (OR). |
-| 90 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 91 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 92 | <code>inline bool validService(ServiceType type) {</code> | Define `validService`. Reject service enum values outside the five defined services. |
-| 93 | <code>    return type &gt;= ServiceType::Collection &amp;&amp; type &lt;= ServiceType::ReturnToSender;</code> | Return the value of `type >= ServiceType::Collection && type <= ServiceType::ReturnToSender` to the caller. This ends the function once its full return expression is evaluated. |
-| 94 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 95 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 96 | <code>// the request type determines which parcel status it must have</code> | Comment explaining intent: the request type determines which parcel status it must have |
-| 97 | <code>inline ParcelStatus serviceStatus(ServiceType type) {</code> | Define `serviceStatus`. Map a valid service to its required active parcel status; creation and later validation share this mapping. |
-| 98 | <code>    switch (type) {</code> | Select a branch according to the enum/menu expression `(type)`. |
-| 99 | <code>    case ServiceType::Collection: return ParcelStatus::AwaitingCollection;</code> | Handle this switch case `ServiceType::Collection`. Return the value of `ParcelStatus::AwaitingCollection` to the caller. This ends the function once its full return expression is evaluated. |
-| 100 | <code>    case ServiceType::CampusDelivery:</code> | Handle this switch case `ServiceType::CampusDelivery`. Begin its branch. |
-| 101 | <code>    case ServiceType::Redelivery: return ParcelStatus::AwaitingDelivery;</code> | Handle this switch case `ServiceType::Redelivery`. Return the value of `ParcelStatus::AwaitingDelivery` to the caller. This ends the function once its full return expression is evaluated. |
-| 102 | <code>    case ServiceType::SpecialHandling: return ParcelStatus::SpecialHandling;</code> | Handle this switch case `ServiceType::SpecialHandling`. Return the value of `ParcelStatus::SpecialHandling` to the caller. This ends the function once its full return expression is evaluated. |
-| 103 | <code>    case ServiceType::ReturnToSender: return ParcelStatus::ReturnPending;</code> | Handle this switch case `ServiceType::ReturnToSender`. Return the value of `ParcelStatus::ReturnPending` to the caller. This ends the function once its full return expression is evaluated. |
-| 104 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 105 | <code>    return ParcelStatus::OnHold;</code> | Return the value of `ParcelStatus::OnHold` to the caller. This ends the function once its full return expression is evaluated. |
-| 106 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 107 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 108 | <code>inline ResourceType serviceResource(ServiceType type) {</code> | Define `serviceResource`. Require a counter for collection and delivery personnel for the other four team-defined services. |
-| 109 | <code>    if (type == ServiceType::Collection) return ResourceType::CollectionCounter;</code> | Test `type == ServiceType::Collection`. Return the value of `ResourceType::CollectionCounter` to the caller. This ends the function once its full return expression is evaluated. |
-| 110 | <code>    return ResourceType::DeliveryPersonnel;</code> | Return the value of `ResourceType::DeliveryPersonnel` to the caller. This ends the function once its full return expression is evaluated. |
-| 111 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 112 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 113 | <code>inline const char* toString(ParcelStatus status) {</code> | Define `toString`. Convert the selected enum type to readable console text. Overloading chooses the appropriate mapping. |
-| 114 | <code>    switch (status) {</code> | Select a branch according to the enum/menu expression `(status)`. |
-| 115 | <code>    case ParcelStatus::Received: return &quot;Received&quot;;</code> | Handle this switch case `ParcelStatus::Received`. Return the value of `"Received"` to the caller. This ends the function once its full return expression is evaluated. |
-| 116 | <code>    case ParcelStatus::AwaitingCollection: return &quot;Awaiting collection&quot;;</code> | Handle this switch case `ParcelStatus::AwaitingCollection`. Return the value of `"Awaiting collection"` to the caller. This ends the function once its full return expression is evaluated. |
-| 117 | <code>    case ParcelStatus::AwaitingDelivery: return &quot;Awaiting delivery&quot;;</code> | Handle this switch case `ParcelStatus::AwaitingDelivery`. Return the value of `"Awaiting delivery"` to the caller. This ends the function once its full return expression is evaluated. |
-| 118 | <code>    case ParcelStatus::SpecialHandling: return &quot;Special handling&quot;;</code> | Handle this switch case `ParcelStatus::SpecialHandling`. Return the value of `"Special handling"` to the caller. This ends the function once its full return expression is evaluated. |
-| 119 | <code>    case ParcelStatus::ReturnPending: return &quot;Return pending&quot;;</code> | Handle this switch case `ParcelStatus::ReturnPending`. Return the value of `"Return pending"` to the caller. This ends the function once its full return expression is evaluated. |
-| 120 | <code>    case ParcelStatus::OnHold: return &quot;On hold&quot;;</code> | Handle this switch case `ParcelStatus::OnHold`. Return the value of `"On hold"` to the caller. This ends the function once its full return expression is evaluated. |
-| 121 | <code>    case ParcelStatus::Missing: return &quot;Missing&quot;;</code> | Handle this switch case `ParcelStatus::Missing`. Return the value of `"Missing"` to the caller. This ends the function once its full return expression is evaluated. |
-| 122 | <code>    case ParcelStatus::Collected: return &quot;Collected&quot;;</code> | Handle this switch case `ParcelStatus::Collected`. Return the value of `"Collected"` to the caller. This ends the function once its full return expression is evaluated. |
-| 123 | <code>    case ParcelStatus::Delivered: return &quot;Delivered&quot;;</code> | Handle this switch case `ParcelStatus::Delivered`. Return the value of `"Delivered"` to the caller. This ends the function once its full return expression is evaluated. |
-| 124 | <code>    case ParcelStatus::Returned: return &quot;Returned&quot;;</code> | Handle this switch case `ParcelStatus::Returned`. Return the value of `"Returned"` to the caller. This ends the function once its full return expression is evaluated. |
-| 125 | <code>    case ParcelStatus::Cancelled: return &quot;Cancelled&quot;;</code> | Handle this switch case `ParcelStatus::Cancelled`. Return the value of `"Cancelled"` to the caller. This ends the function once its full return expression is evaluated. |
-| 126 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 127 | <code>    return &quot;Unknown&quot;;</code> | Return the value of `"Unknown"` to the caller. This ends the function once its full return expression is evaluated. |
-| 128 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 129 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 130 | <code>inline const char* toString(RequestStatus status) {</code> | Define `toString`. Convert the selected enum type to readable console text. Overloading chooses the appropriate mapping. |
-| 131 | <code>    switch (status) {</code> | Select a branch according to the enum/menu expression `(status)`. |
-| 132 | <code>    case RequestStatus::Pending: return &quot;Pending&quot;;</code> | Handle this switch case `RequestStatus::Pending`. Return the value of `"Pending"` to the caller. This ends the function once its full return expression is evaluated. |
-| 133 | <code>    case RequestStatus::Assigned: return &quot;Assigned&quot;;</code> | Handle this switch case `RequestStatus::Assigned`. Return the value of `"Assigned"` to the caller. This ends the function once its full return expression is evaluated. |
-| 134 | <code>    case RequestStatus::InProgress: return &quot;In progress&quot;;</code> | Handle this switch case `RequestStatus::InProgress`. Return the value of `"In progress"` to the caller. This ends the function once its full return expression is evaluated. |
-| 135 | <code>    case RequestStatus::Completed: return &quot;Completed&quot;;</code> | Handle this switch case `RequestStatus::Completed`. Return the value of `"Completed"` to the caller. This ends the function once its full return expression is evaluated. |
-| 136 | <code>    case RequestStatus::Cancelled: return &quot;Cancelled&quot;;</code> | Handle this switch case `RequestStatus::Cancelled`. Return the value of `"Cancelled"` to the caller. This ends the function once its full return expression is evaluated. |
-| 137 | <code>    case RequestStatus::Returned: return &quot;Returned&quot;;</code> | Handle this switch case `RequestStatus::Returned`. Return the value of `"Returned"` to the caller. This ends the function once its full return expression is evaluated. |
-| 138 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 139 | <code>    return &quot;Unknown&quot;;</code> | Return the value of `"Unknown"` to the caller. This ends the function once its full return expression is evaluated. |
-| 140 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 141 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 142 | <code>inline const char* toString(ServiceType type) {</code> | Define `toString`. Convert the selected enum type to readable console text. Overloading chooses the appropriate mapping. |
-| 143 | <code>    switch (type) {</code> | Select a branch according to the enum/menu expression `(type)`. |
-| 144 | <code>    case ServiceType::Collection: return &quot;Collection&quot;;</code> | Handle this switch case `ServiceType::Collection`. Return the value of `"Collection"` to the caller. This ends the function once its full return expression is evaluated. |
-| 145 | <code>    case ServiceType::CampusDelivery: return &quot;Campus delivery&quot;;</code> | Handle this switch case `ServiceType::CampusDelivery`. Return the value of `"Campus delivery"` to the caller. This ends the function once its full return expression is evaluated. |
-| 146 | <code>    case ServiceType::SpecialHandling: return &quot;Special handling&quot;;</code> | Handle this switch case `ServiceType::SpecialHandling`. Return the value of `"Special handling"` to the caller. This ends the function once its full return expression is evaluated. |
-| 147 | <code>    case ServiceType::Redelivery: return &quot;Redelivery&quot;;</code> | Handle this switch case `ServiceType::Redelivery`. Return the value of `"Redelivery"` to the caller. This ends the function once its full return expression is evaluated. |
-| 148 | <code>    case ServiceType::ReturnToSender: return &quot;Return to sender&quot;;</code> | Handle this switch case `ServiceType::ReturnToSender`. Return the value of `"Return to sender"` to the caller. This ends the function once its full return expression is evaluated. |
-| 149 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 150 | <code>    return &quot;Unknown&quot;;</code> | Return the value of `"Unknown"` to the caller. This ends the function once its full return expression is evaluated. |
-| 151 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 152 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 153 | <code>inline const char* toString(ResourceStatus status) {</code> | Define `toString`. Convert the selected enum type to readable console text. Overloading chooses the appropriate mapping. |
-| 154 | <code>    switch (status) {</code> | Select a branch according to the enum/menu expression `(status)`. |
-| 155 | <code>    case ResourceStatus::Available: return &quot;Available&quot;;</code> | Handle this switch case `ResourceStatus::Available`. Return the value of `"Available"` to the caller. This ends the function once its full return expression is evaluated. |
-| 156 | <code>    case ResourceStatus::Occupied: return &quot;Occupied&quot;;</code> | Handle this switch case `ResourceStatus::Occupied`. Return the value of `"Occupied"` to the caller. This ends the function once its full return expression is evaluated. |
-| 157 | <code>    case ResourceStatus::Unavailable: return &quot;Unavailable&quot;;</code> | Handle this switch case `ResourceStatus::Unavailable`. Return the value of `"Unavailable"` to the caller. This ends the function once its full return expression is evaluated. |
-| 158 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 159 | <code>    return &quot;Unknown&quot;;</code> | Return the value of `"Unknown"` to the caller. This ends the function once its full return expression is evaluated. |
-| 160 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 161 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 162 | <code>inline void printParcel(const Parcel&amp; parcel) {</code> | Define `printParcel`. Print all parcel details and current status on a pipe-separated console row. |
-| 163 | <code>    cout &lt;&lt; parcel.id &lt;&lt; &quot; &#124; &quot; &lt;&lt; parcel.recipientName &lt;&lt; &quot; &#124; recipient &quot; &lt;&lt; parcel.recipientId</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 164 | <code>         &lt;&lt; &quot; &#124; contact &quot; &lt;&lt; parcel.recipientContact &lt;&lt; &quot; &#124; carrier &quot; &lt;&lt; parcel.deliveryCompany</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 165 | <code>         &lt;&lt; &quot; &#124; tracking &quot; &lt;&lt; parcel.trackingNumber &lt;&lt; &quot; &#124; destination &quot; &lt;&lt; parcel.destination</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 166 | <code>         &lt;&lt; &quot; &#124; type &quot; &lt;&lt; parcel.parcelType &lt;&lt; &quot; &#124; status &quot; &lt;&lt; toString(parcel.status)</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 167 | <code>         &lt;&lt; &quot; &#124; arrived &quot; &lt;&lt; parcel.arrivalTime &lt;&lt; &#x27;\n&#x27;;</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 168 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 169 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 170 | <code>inline void printRequest(const ServiceRequest&amp; request) {</code> | Define `printRequest`. Print request service, priority, lifecycle, recipient, details, creation time, assignment and outcome. |
-| 171 | <code>    cout &lt;&lt; request.id &lt;&lt; &quot; &#124; parcel &quot; &lt;&lt; request.parcelId &lt;&lt; &quot; &#124; &quot; &lt;&lt; toString(request.type)</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 172 | <code>         &lt;&lt; &quot; &#124; &quot; &lt;&lt; (request.priority == RequestPriority::Urgent ? &quot;Urgent&quot; : &quot;Normal&quot;)</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 173 | <code>         &lt;&lt; &quot; &#124; status &quot; &lt;&lt; toString(request.status) &lt;&lt; &quot; &#124; recipient &quot; &lt;&lt; request.recipientId</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 174 | <code>         &lt;&lt; &quot; &#124; details &quot; &lt;&lt; request.serviceDetails &lt;&lt; &quot; &#124; created &quot; &lt;&lt; request.createdAt</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 175 | <code>         &lt;&lt; &quot; &#124; resource &quot; &lt;&lt; (request.resourceId.empty() ? &quot;-&quot; : request.resourceId)</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 176 | <code>         &lt;&lt; &quot; &#124; outcome &quot; &lt;&lt; (request.outcomeDetails.empty() ? &quot;-&quot; : request.outcomeDetails) &lt;&lt; &#x27;\n&#x27;;</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
-| 177 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 178 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 179 | <code>} // namespace campus</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 180 | <code>#endif</code> | End the conditional preprocessing block; preprocessing itself does not run at program runtime. |
+| 64 | <code>    if (first == string::npos) {</code> | Test `first == string::npos`. Run the following guarded block only when true. |
+| 65 | <code>        return &quot;&quot;;</code> | Return the value of `""` to the caller. This ends the function once its full return expression is evaluated. |
+| 66 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 67 | <code>    size_t last = text.find_last_not_of(&quot; \t\r\n&quot;);</code> | Declare member `last` using the type and initializer shown. It belongs to each instance of the enclosing type. |
+| 68 | <code>    return text.substr(first, last - first + 1);</code> | Return the value of `text.substr(first, last - first + 1)` to the caller. This ends the function once its full return expression is evaluated. |
+| 69 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 70 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 71 | <code>inline string currentTimestamp() {</code> | Define `currentTimestamp`. Produce the local YYYY-MM-DD HH:MM:SS arrival/request timestamp using the correct Windows/POSIX localtime function. |
+| 72 | <code>    time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());</code> | Declare member `now` using the type and initializer shown. It belongs to each instance of the enclosing type. |
+| 73 | <code>    tm local = {};</code> | Declare member `local` using the type and initializer shown. It belongs to each instance of the enclosing type. |
+| 74 | <code>#ifdef _WIN32</code> | Select Windows-specific local-time conversion when compiled for Windows. |
+| 75 | <code>    localtime_s(&amp;local, &amp;now);</code> | Call `localtime_s` with the shown arguments. The call performs its named operation within currentTimestamp. |
+| 76 | <code>#else</code> | Use the POSIX local-time conversion on non-Windows platforms. |
+| 77 | <code>    localtime_r(&amp;now, &amp;local);</code> | Call `localtime_r` with the shown arguments. The call performs its named operation within currentTimestamp. |
+| 78 | <code>#endif</code> | End the conditional preprocessing block; preprocessing itself does not run at program runtime. |
+| 79 | <code>    ostringstream stamp;</code> | Declare member `stamp` using the type and initializer shown. It belongs to each instance of the enclosing type. |
+| 80 | <code>    stamp &lt;&lt; put_time(&amp;local, &quot;%Y-%m-%d %H:%M:%S&quot;);</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 81 | <code>    return stamp.str();</code> | Return the value of `stamp.str()` to the caller. This ends the function once its full return expression is evaluated. |
+| 82 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 83 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 84 | <code>inline bool isTerminal(ParcelStatus status) {</code> | Define `isTerminal`. Recognize the four parcel states that must never reopen. |
+| 85 | <code>    return status == ParcelStatus::Collected &#124;&#124; status == ParcelStatus::Delivered</code> | Return the value of `status == ParcelStatus::Collected &#124;&#124; status == ParcelStatus::Delivered` to the caller. This ends the function once its full return expression is evaluated. |
+| 86 | <code>        &#124;&#124; status == ParcelStatus::Returned &#124;&#124; status == ParcelStatus::Cancelled;</code> | Continue the preceding short-circuit boolean expression with an alternative accepted/rejected condition (OR). |
+| 87 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 88 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 89 | <code>inline bool isActive(RequestStatus status) {</code> | Define `isActive`. Recognize the three request states that still count as active work. |
+| 90 | <code>    return status == RequestStatus::Pending &#124;&#124; status == RequestStatus::Assigned</code> | Return the value of `status == RequestStatus::Pending &#124;&#124; status == RequestStatus::Assigned` to the caller. This ends the function once its full return expression is evaluated. |
+| 91 | <code>        &#124;&#124; status == RequestStatus::InProgress;</code> | Continue the preceding short-circuit boolean expression with an alternative accepted/rejected condition (OR). |
+| 92 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 93 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 94 | <code>inline bool validService(ServiceType type) {</code> | Define `validService`. Reject service enum values outside the five defined services. |
+| 95 | <code>    return type &gt;= ServiceType::Collection &amp;&amp; type &lt;= ServiceType::ReturnToSender;</code> | Return the value of `type >= ServiceType::Collection && type <= ServiceType::ReturnToSender` to the caller. This ends the function once its full return expression is evaluated. |
+| 96 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 97 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 98 | <code>// the request type determines which parcel status it must have</code> | Comment explaining intent: the request type determines which parcel status it must have |
+| 99 | <code>inline ParcelStatus serviceStatus(ServiceType type) {</code> | Define `serviceStatus`. Map a valid service to its required active parcel status; creation and later validation share this mapping. |
+| 100 | <code>    switch (type) {</code> | Select a branch according to the enum/menu expression `(type)`. |
+| 101 | <code>    case ServiceType::Collection:</code> | Handle this switch case `ServiceType::Collection`. Begin its branch. |
+| 102 | <code>        return ParcelStatus::AwaitingCollection;</code> | Return the value of `ParcelStatus::AwaitingCollection` to the caller. This ends the function once its full return expression is evaluated. |
+| 103 | <code>    case ServiceType::CampusDelivery:</code> | Handle this switch case `ServiceType::CampusDelivery`. Begin its branch. |
+| 104 | <code>    case ServiceType::Redelivery:</code> | Handle this switch case `ServiceType::Redelivery`. Begin its branch. |
+| 105 | <code>        return ParcelStatus::AwaitingDelivery;</code> | Return the value of `ParcelStatus::AwaitingDelivery` to the caller. This ends the function once its full return expression is evaluated. |
+| 106 | <code>    case ServiceType::SpecialHandling:</code> | Handle this switch case `ServiceType::SpecialHandling`. Begin its branch. |
+| 107 | <code>        return ParcelStatus::SpecialHandling;</code> | Return the value of `ParcelStatus::SpecialHandling` to the caller. This ends the function once its full return expression is evaluated. |
+| 108 | <code>    case ServiceType::ReturnToSender:</code> | Handle this switch case `ServiceType::ReturnToSender`. Begin its branch. |
+| 109 | <code>        return ParcelStatus::ReturnPending;</code> | Return the value of `ParcelStatus::ReturnPending` to the caller. This ends the function once its full return expression is evaluated. |
+| 110 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 111 | <code>    return ParcelStatus::OnHold;</code> | Return the value of `ParcelStatus::OnHold` to the caller. This ends the function once its full return expression is evaluated. |
+| 112 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 113 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 114 | <code>inline ResourceType serviceResource(ServiceType type) {</code> | Define `serviceResource`. Require a counter for collection and delivery personnel for the other four team-defined services. |
+| 115 | <code>    if (type == ServiceType::Collection) {</code> | Test `type == ServiceType::Collection`. Run the following guarded block only when true. |
+| 116 | <code>        return ResourceType::CollectionCounter;</code> | Return the value of `ResourceType::CollectionCounter` to the caller. This ends the function once its full return expression is evaluated. |
+| 117 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 118 | <code>    return ResourceType::DeliveryPersonnel;</code> | Return the value of `ResourceType::DeliveryPersonnel` to the caller. This ends the function once its full return expression is evaluated. |
+| 119 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 120 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 121 | <code>inline const char* toString(ParcelStatus status) {</code> | Define `toString`. Convert the selected enum type to readable console text. Overloading chooses the appropriate mapping. |
+| 122 | <code>    switch (status) {</code> | Select a branch according to the enum/menu expression `(status)`. |
+| 123 | <code>    case ParcelStatus::Received:</code> | Handle this switch case `ParcelStatus::Received`. Begin its branch. |
+| 124 | <code>        return &quot;Received&quot;;</code> | Return the value of `"Received"` to the caller. This ends the function once its full return expression is evaluated. |
+| 125 | <code>    case ParcelStatus::AwaitingCollection:</code> | Handle this switch case `ParcelStatus::AwaitingCollection`. Begin its branch. |
+| 126 | <code>        return &quot;Awaiting collection&quot;;</code> | Return the value of `"Awaiting collection"` to the caller. This ends the function once its full return expression is evaluated. |
+| 127 | <code>    case ParcelStatus::AwaitingDelivery:</code> | Handle this switch case `ParcelStatus::AwaitingDelivery`. Begin its branch. |
+| 128 | <code>        return &quot;Awaiting delivery&quot;;</code> | Return the value of `"Awaiting delivery"` to the caller. This ends the function once its full return expression is evaluated. |
+| 129 | <code>    case ParcelStatus::SpecialHandling:</code> | Handle this switch case `ParcelStatus::SpecialHandling`. Begin its branch. |
+| 130 | <code>        return &quot;Special handling&quot;;</code> | Return the value of `"Special handling"` to the caller. This ends the function once its full return expression is evaluated. |
+| 131 | <code>    case ParcelStatus::ReturnPending:</code> | Handle this switch case `ParcelStatus::ReturnPending`. Begin its branch. |
+| 132 | <code>        return &quot;Return pending&quot;;</code> | Return the value of `"Return pending"` to the caller. This ends the function once its full return expression is evaluated. |
+| 133 | <code>    case ParcelStatus::OnHold:</code> | Handle this switch case `ParcelStatus::OnHold`. Begin its branch. |
+| 134 | <code>        return &quot;On hold&quot;;</code> | Return the value of `"On hold"` to the caller. This ends the function once its full return expression is evaluated. |
+| 135 | <code>    case ParcelStatus::Missing:</code> | Handle this switch case `ParcelStatus::Missing`. Begin its branch. |
+| 136 | <code>        return &quot;Missing&quot;;</code> | Return the value of `"Missing"` to the caller. This ends the function once its full return expression is evaluated. |
+| 137 | <code>    case ParcelStatus::Collected:</code> | Handle this switch case `ParcelStatus::Collected`. Begin its branch. |
+| 138 | <code>        return &quot;Collected&quot;;</code> | Return the value of `"Collected"` to the caller. This ends the function once its full return expression is evaluated. |
+| 139 | <code>    case ParcelStatus::Delivered:</code> | Handle this switch case `ParcelStatus::Delivered`. Begin its branch. |
+| 140 | <code>        return &quot;Delivered&quot;;</code> | Return the value of `"Delivered"` to the caller. This ends the function once its full return expression is evaluated. |
+| 141 | <code>    case ParcelStatus::Returned:</code> | Handle this switch case `ParcelStatus::Returned`. Begin its branch. |
+| 142 | <code>        return &quot;Returned&quot;;</code> | Return the value of `"Returned"` to the caller. This ends the function once its full return expression is evaluated. |
+| 143 | <code>    case ParcelStatus::Cancelled:</code> | Handle this switch case `ParcelStatus::Cancelled`. Begin its branch. |
+| 144 | <code>        return &quot;Cancelled&quot;;</code> | Return the value of `"Cancelled"` to the caller. This ends the function once its full return expression is evaluated. |
+| 145 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 146 | <code>    return &quot;Unknown&quot;;</code> | Return the value of `"Unknown"` to the caller. This ends the function once its full return expression is evaluated. |
+| 147 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 148 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 149 | <code>inline const char* toString(RequestStatus status) {</code> | Define `toString`. Convert the selected enum type to readable console text. Overloading chooses the appropriate mapping. |
+| 150 | <code>    switch (status) {</code> | Select a branch according to the enum/menu expression `(status)`. |
+| 151 | <code>    case RequestStatus::Pending:</code> | Handle this switch case `RequestStatus::Pending`. Begin its branch. |
+| 152 | <code>        return &quot;Pending&quot;;</code> | Return the value of `"Pending"` to the caller. This ends the function once its full return expression is evaluated. |
+| 153 | <code>    case RequestStatus::Assigned:</code> | Handle this switch case `RequestStatus::Assigned`. Begin its branch. |
+| 154 | <code>        return &quot;Assigned&quot;;</code> | Return the value of `"Assigned"` to the caller. This ends the function once its full return expression is evaluated. |
+| 155 | <code>    case RequestStatus::InProgress:</code> | Handle this switch case `RequestStatus::InProgress`. Begin its branch. |
+| 156 | <code>        return &quot;In progress&quot;;</code> | Return the value of `"In progress"` to the caller. This ends the function once its full return expression is evaluated. |
+| 157 | <code>    case RequestStatus::Completed:</code> | Handle this switch case `RequestStatus::Completed`. Begin its branch. |
+| 158 | <code>        return &quot;Completed&quot;;</code> | Return the value of `"Completed"` to the caller. This ends the function once its full return expression is evaluated. |
+| 159 | <code>    case RequestStatus::Cancelled:</code> | Handle this switch case `RequestStatus::Cancelled`. Begin its branch. |
+| 160 | <code>        return &quot;Cancelled&quot;;</code> | Return the value of `"Cancelled"` to the caller. This ends the function once its full return expression is evaluated. |
+| 161 | <code>    case RequestStatus::Returned:</code> | Handle this switch case `RequestStatus::Returned`. Begin its branch. |
+| 162 | <code>        return &quot;Returned&quot;;</code> | Return the value of `"Returned"` to the caller. This ends the function once its full return expression is evaluated. |
+| 163 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 164 | <code>    return &quot;Unknown&quot;;</code> | Return the value of `"Unknown"` to the caller. This ends the function once its full return expression is evaluated. |
+| 165 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 166 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 167 | <code>inline const char* toString(ServiceType type) {</code> | Define `toString`. Convert the selected enum type to readable console text. Overloading chooses the appropriate mapping. |
+| 168 | <code>    switch (type) {</code> | Select a branch according to the enum/menu expression `(type)`. |
+| 169 | <code>    case ServiceType::Collection:</code> | Handle this switch case `ServiceType::Collection`. Begin its branch. |
+| 170 | <code>        return &quot;Collection&quot;;</code> | Return the value of `"Collection"` to the caller. This ends the function once its full return expression is evaluated. |
+| 171 | <code>    case ServiceType::CampusDelivery:</code> | Handle this switch case `ServiceType::CampusDelivery`. Begin its branch. |
+| 172 | <code>        return &quot;Campus delivery&quot;;</code> | Return the value of `"Campus delivery"` to the caller. This ends the function once its full return expression is evaluated. |
+| 173 | <code>    case ServiceType::SpecialHandling:</code> | Handle this switch case `ServiceType::SpecialHandling`. Begin its branch. |
+| 174 | <code>        return &quot;Special handling&quot;;</code> | Return the value of `"Special handling"` to the caller. This ends the function once its full return expression is evaluated. |
+| 175 | <code>    case ServiceType::Redelivery:</code> | Handle this switch case `ServiceType::Redelivery`. Begin its branch. |
+| 176 | <code>        return &quot;Redelivery&quot;;</code> | Return the value of `"Redelivery"` to the caller. This ends the function once its full return expression is evaluated. |
+| 177 | <code>    case ServiceType::ReturnToSender:</code> | Handle this switch case `ServiceType::ReturnToSender`. Begin its branch. |
+| 178 | <code>        return &quot;Return to sender&quot;;</code> | Return the value of `"Return to sender"` to the caller. This ends the function once its full return expression is evaluated. |
+| 179 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 180 | <code>    return &quot;Unknown&quot;;</code> | Return the value of `"Unknown"` to the caller. This ends the function once its full return expression is evaluated. |
+| 181 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 182 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 183 | <code>inline const char* toString(ResourceStatus status) {</code> | Define `toString`. Convert the selected enum type to readable console text. Overloading chooses the appropriate mapping. |
+| 184 | <code>    switch (status) {</code> | Select a branch according to the enum/menu expression `(status)`. |
+| 185 | <code>    case ResourceStatus::Available:</code> | Handle this switch case `ResourceStatus::Available`. Begin its branch. |
+| 186 | <code>        return &quot;Available&quot;;</code> | Return the value of `"Available"` to the caller. This ends the function once its full return expression is evaluated. |
+| 187 | <code>    case ResourceStatus::Occupied:</code> | Handle this switch case `ResourceStatus::Occupied`. Begin its branch. |
+| 188 | <code>        return &quot;Occupied&quot;;</code> | Return the value of `"Occupied"` to the caller. This ends the function once its full return expression is evaluated. |
+| 189 | <code>    case ResourceStatus::Unavailable:</code> | Handle this switch case `ResourceStatus::Unavailable`. Begin its branch. |
+| 190 | <code>        return &quot;Unavailable&quot;;</code> | Return the value of `"Unavailable"` to the caller. This ends the function once its full return expression is evaluated. |
+| 191 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 192 | <code>    return &quot;Unknown&quot;;</code> | Return the value of `"Unknown"` to the caller. This ends the function once its full return expression is evaluated. |
+| 193 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 194 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 195 | <code>inline void printParcel(const Parcel&amp; parcel) {</code> | Define `printParcel`. Print all parcel details and current status on a pipe-separated console row. |
+| 196 | <code>    cout &lt;&lt; parcel.id &lt;&lt; &quot; &#124; &quot; &lt;&lt; parcel.recipientName &lt;&lt; &quot; &#124; recipient &quot; &lt;&lt; parcel.recipientId</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 197 | <code>         &lt;&lt; &quot; &#124; contact &quot; &lt;&lt; parcel.recipientContact &lt;&lt; &quot; &#124; carrier &quot; &lt;&lt; parcel.deliveryCompany</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 198 | <code>         &lt;&lt; &quot; &#124; tracking &quot; &lt;&lt; parcel.trackingNumber &lt;&lt; &quot; &#124; destination &quot; &lt;&lt; parcel.destination</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 199 | <code>         &lt;&lt; &quot; &#124; type &quot; &lt;&lt; parcel.parcelType &lt;&lt; &quot; &#124; status &quot; &lt;&lt; toString(parcel.status)</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 200 | <code>         &lt;&lt; &quot; &#124; arrived &quot; &lt;&lt; parcel.arrivalTime &lt;&lt; &#x27;\n&#x27;;</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 201 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 202 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 203 | <code>inline void printRequest(const ServiceRequest&amp; request) {</code> | Define `printRequest`. Print request service, priority, lifecycle, recipient, details, creation time, assignment and outcome. |
+| 204 | <code>    string priorityName = &quot;Normal&quot;;</code> | Declare member `priorityName` using the type and initializer shown. It belongs to each instance of the enclosing type. |
+| 205 | <code>    if (request.priority == RequestPriority::Urgent) {</code> | Test `request.priority == RequestPriority::Urgent`. Run the following guarded block only when true. |
+| 206 | <code>        priorityName = &quot;Urgent&quot;;</code> | Set `priorityName` to `"Urgent"`. |
+| 207 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 208 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 209 | <code>    string resourceName = &quot;-&quot;;</code> | Declare member `resourceName` using the type and initializer shown. It belongs to each instance of the enclosing type. |
+| 210 | <code>    if (!request.resourceId.empty()) {</code> | Test `!request.resourceId.empty()`. Run the following guarded block only when true. |
+| 211 | <code>        resourceName = request.resourceId;</code> | Set `resourceName` to `request.resourceId`. |
+| 212 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 213 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 214 | <code>    string outcomeText = &quot;-&quot;;</code> | Declare member `outcomeText` using the type and initializer shown. It belongs to each instance of the enclosing type. |
+| 215 | <code>    if (!request.outcomeDetails.empty()) {</code> | Test `!request.outcomeDetails.empty()`. Run the following guarded block only when true. |
+| 216 | <code>        outcomeText = request.outcomeDetails;</code> | Set `outcomeText` to `request.outcomeDetails`. |
+| 217 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 218 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 219 | <code>    cout &lt;&lt; request.id &lt;&lt; &quot; &#124; parcel &quot; &lt;&lt; request.parcelId &lt;&lt; &quot; &#124; &quot; &lt;&lt; toString(request.type)</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 220 | <code>         &lt;&lt; &quot; &#124; &quot; &lt;&lt; priorityName</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 221 | <code>         &lt;&lt; &quot; &#124; status &quot; &lt;&lt; toString(request.status) &lt;&lt; &quot; &#124; recipient &quot; &lt;&lt; request.recipientId</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 222 | <code>         &lt;&lt; &quot; &#124; details &quot; &lt;&lt; request.serviceDetails &lt;&lt; &quot; &#124; created &quot; &lt;&lt; request.createdAt</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 223 | <code>         &lt;&lt; &quot; &#124; resource &quot; &lt;&lt; resourceName</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 224 | <code>         &lt;&lt; &quot; &#124; outcome &quot; &lt;&lt; outcomeText &lt;&lt; &#x27;\n&#x27;;</code> | Write/continue formatted output. << appends text/field values; \n or '\n' inserts a newline. |
+| 225 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 226 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
+| 227 | <code>} // namespace campus</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 228 | <code>#endif</code> | End the conditional preprocessing block; preprocessing itself does not run at program runtime. |

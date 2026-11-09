@@ -13,16 +13,40 @@ bool prepareParcel(Parcel& parcel) {
     parcel.trackingNumber = trim(parcel.trackingNumber);
     parcel.destination = trim(parcel.destination);
     parcel.parcelType = trim(parcel.parcelType);
-    return !parcel.recipientName.empty() && !parcel.recipientId.empty()
-        && !parcel.recipientContact.empty() && !parcel.deliveryCompany.empty()
-        && !parcel.trackingNumber.empty() && !parcel.destination.empty()
-        && !parcel.parcelType.empty();
+    if (parcel.recipientName.empty()) {
+        return false;
+    }
+    if (parcel.recipientId.empty()) {
+        return false;
+    }
+    if (parcel.recipientContact.empty()) {
+        return false;
+    }
+    if (parcel.deliveryCompany.empty()) {
+        return false;
+    }
+    if (parcel.trackingNumber.empty()) {
+        return false;
+    }
+    if (parcel.destination.empty()) {
+        return false;
+    }
+    if (parcel.parcelType.empty()) {
+        return false;
+    }
+    return true;
 }
 
 ServiceType routeService(Route route) {
-    if (route == Route::Collection) return ServiceType::Collection;
-    if (route == Route::CampusDelivery) return ServiceType::CampusDelivery;
-    if (route == Route::SpecialHandling) return ServiceType::SpecialHandling;
+    if (route == Route::Collection) {
+        return ServiceType::Collection;
+    }
+    if (route == Route::CampusDelivery) {
+        return ServiceType::CampusDelivery;
+    }
+    if (route == Route::SpecialHandling) {
+        return ServiceType::SpecialHandling;
+    }
     return ServiceType::ReturnToSender;
 }
 }
@@ -36,29 +60,38 @@ ParcelRecords::~ParcelRecords() {
 }
 
 bool ParcelRecords::insert(const Parcel& parcel) {
-    if (trim(parcel.id).empty() || find(parcel.id) != nullptr) return false;
-    Node* node = new Node{parcel, head};
+    if (trim(parcel.id).empty() || find(parcel.id) != nullptr) {
+        return false;
+    }
+    Node* node = new Node{parcel}; // copy data during allocation so a failed copy cannot leak a node
+    node->next = head;
     head = node;
     return true;
 }
 
 Parcel* ParcelRecords::find(const string& id) {
     for (Node* current = head; current != nullptr; current = current->next) {
-        if (current->value.id == id) return &current->value;
+        if (current->value.id == id) {
+            return &current->value;
+        }
     }
     return nullptr;
 }
 
 const Parcel* ParcelRecords::find(const string& id) const {
     for (const Node* current = head; current != nullptr; current = current->next) {
-        if (current->value.id == id) return &current->value;
+        if (current->value.id == id) {
+            return &current->value;
+        }
     }
     return nullptr;
 }
 
 bool ParcelRecords::hasTrackingNumber(const string& tracking, const string& exceptId) const {
     for (const Node* current = head; current != nullptr; current = current->next) {
-        if (current->value.trackingNumber == tracking && current->value.id != exceptId) return true;
+        if (current->value.trackingNumber == tracking && current->value.id != exceptId) {
+            return true;
+        }
     }
     return false;
 }
@@ -70,15 +103,23 @@ bool ParcelRecords::remove(const string& id) {
         previous = current;
         current = current->next;
     }
-    if (current == nullptr) return false;
-    if (previous == nullptr) head = current->next;
-    else previous->next = current->next;
+    if (current == nullptr) {
+        return false;
+    }
+    if (previous == nullptr) {
+        head = current->next;
+    }
+    else {
+        previous->next = current->next;
+    }
     delete current;
     return true;
 }
 
 void ParcelRecords::display() const {
-    if (head == nullptr) cout << "No parcel records.\n";
+    if (head == nullptr) {
+        cout << "No parcel records.\n";
+    }
     for (const Node* current = head; current != nullptr; current = current->next) {
         printParcel(current->value);
     }
@@ -94,26 +135,38 @@ IntakeQueue::~IntakeQueue() {
 }
 
 bool IntakeQueue::enqueue(const string& id) {
-    if (trim(id).empty()) return false;
-    Node* node = new Node{id, nullptr};
-    if (rear == nullptr) front = node;
-    else rear->next = node;
+    if (trim(id).empty()) {
+        return false;
+    }
+    Node* node = new Node{id}; // next starts as nullptr
+    if (rear == nullptr) {
+        front = node;
+    }
+    else {
+        rear->next = node;
+    }
     rear = node;
     return true;
 }
 
 bool IntakeQueue::dequeue(string& id) {
-    if (front == nullptr) return false;
+    if (front == nullptr) {
+        return false;
+    }
     id = front->parcelId;
     Node* old = front;
     front = front->next;
-    if (front == nullptr) rear = nullptr;
+    if (front == nullptr) {
+        rear = nullptr;
+    }
     delete old;
     return true;
 }
 
 bool IntakeQueue::peek(string& id) const {
-    if (front == nullptr) return false;
+    if (front == nullptr) {
+        return false;
+    }
     id = front->parcelId;
     return true;
 }
@@ -125,16 +178,26 @@ bool IntakeQueue::remove(const string& id) {
         previous = current;
         current = current->next;
     }
-    if (current == nullptr) return false;
-    if (previous == nullptr) front = current->next;
-    else previous->next = current->next;
-    if (current == rear) rear = previous;
+    if (current == nullptr) {
+        return false;
+    }
+    if (previous == nullptr) {
+        front = current->next;
+    }
+    else {
+        previous->next = current->next;
+    }
+    if (current == rear) {
+        rear = previous;
+    }
     delete current;
     return true;
 }
 
 void IntakeQueue::display() const {
-    if (front == nullptr) cout << "No parcels waiting.\n";
+    if (front == nullptr) {
+        cout << "No parcels waiting.\n";
+    }
     for (const Node* current = front; current != nullptr; current = current->next) {
         cout << current->parcelId << '\n';
     }
@@ -152,7 +215,9 @@ bool ParcelModule::registerParcel(Parcel parcel) {
     parcel.id = "P" + to_string(nextParcelNumber);
     parcel.arrivalTime = currentTimestamp();
     parcel.status = ParcelStatus::Received;
-    if (!records.insert(parcel)) return false;
+    if (!records.insert(parcel)) {
+        return false;
+    }
     try {
         waiting.enqueue(parcel.id);
     }
@@ -171,18 +236,28 @@ void ParcelModule::displayParcels() const {
 
 const Parcel* ParcelModule::findParcel(const string& id) const {
     const Parcel* parcel = records.find(id);
-    if (parcel == nullptr) cout << "Parcel not found.\n";
+    if (parcel == nullptr) {
+        cout << "Parcel not found.\n";
+    }
     return parcel;
 }
 
 bool ParcelModule::updateParcel(const string& id, Parcel replacement, const ServiceModule& services) {
     Parcel* parcel = records.find(id);
-    if (parcel == nullptr || isTerminal(parcel->status)) {
-        cout << "Parcel is missing from records or already completed.\n";
+    if (parcel == nullptr) {
+        cout << "Parcel not found.\n";
         return false;
     }
-    if (!prepareParcel(replacement) || records.hasTrackingNumber(replacement.trackingNumber, id)) {
-        cout << "Incomplete details or duplicate tracking number.\n";
+    if (isTerminal(parcel->status)) {
+        cout << "Completed parcel details cannot be edited.\n";
+        return false;
+    }
+    if (!prepareParcel(replacement)) {
+        cout << "All parcel details are required.\n";
+        return false;
+    }
+    if (records.hasTrackingNumber(replacement.trackingNumber, id)) {
+        cout << "Duplicate tracking number.\n";
         return false;
     }
     if (services.hasActiveRequestForParcel(id)) {
@@ -199,9 +274,16 @@ bool ParcelModule::updateParcel(const string& id, Parcel replacement, const Serv
 
 bool ParcelModule::removeParcel(const string& id, const ServiceModule& services) {
     const Parcel* parcel = records.find(id);
-    if (parcel == nullptr || parcel->status != ParcelStatus::Cancelled
-        || services.hasActiveRequestForParcel(id)) {
-        cout << "Only cancelled parcels without active requests can be removed.\n";
+    if (parcel == nullptr) {
+        cout << "Parcel not found.\n";
+        return false;
+    }
+    if (parcel->status != ParcelStatus::Cancelled) {
+        cout << "Only cancelled parcels can be removed.\n";
+        return false;
+    }
+    if (services.hasActiveRequestForParcel(id)) {
+        cout << "Parcel still has an active request.\n";
         return false;
     }
     waiting.remove(id);
@@ -209,22 +291,29 @@ bool ParcelModule::removeParcel(const string& id, const ServiceModule& services)
 }
 
 bool ParcelModule::processNext(Route route, ServiceModule& services, RequestPriority priority) {
-    if (route < Route::Collection || route > Route::InvestigationHold
-        || (priority != RequestPriority::Urgent && priority != RequestPriority::Normal)) {
-        cout << "Invalid route or priority.\n";
+    if (route < Route::Collection || route > Route::InvestigationHold) {
+        cout << "Invalid intake route.\n";
+        return false;
+    }
+    if (priority != RequestPriority::Urgent && priority != RequestPriority::Normal) {
+        cout << "Invalid request priority.\n";
         return false;
     }
     string id;
     while (waiting.peek(id)) {
         Parcel* parcel = records.find(id);
-        if (parcel != nullptr && parcel->status == ParcelStatus::Received) break;
+        if (parcel != nullptr && parcel->status == ParcelStatus::Received) {
+            break;
+        }
         waiting.dequeue(id); // discard stale entries without touching parcel records
     }
     if (waiting.empty()) {
         cout << "Intake queue is empty.\n";
         return false;
     }
-    if (route == Route::InvestigationHold) return updateStatus(id, ParcelStatus::OnHold, services);
+    if (route == Route::InvestigationHold) {
+        return updateStatus(id, ParcelStatus::OnHold, services);
+    }
     ServiceRequest request;
     request.parcelId = id;
     request.recipientId = records.find(id)->recipientId;
@@ -237,9 +326,16 @@ bool ParcelModule::processNext(Route route, ServiceModule& services, RequestPrio
 bool ParcelModule::resumeParcel(const string& id, Route route, ServiceModule& services,
                                 RequestPriority priority) {
     const Parcel* parcel = records.find(id);
-    if (parcel == nullptr || parcel->status != ParcelStatus::OnHold
-        || route < Route::Collection || route > Route::ReturnToSender) {
-        cout << "Resume an On hold parcel with a service route. Recover missing parcels to On hold first.\n";
+    if (parcel == nullptr) {
+        cout << "Parcel not found.\n";
+        return false;
+    }
+    if (parcel->status != ParcelStatus::OnHold) {
+        cout << "Resume only On hold parcels. Recover missing parcels to On hold first.\n";
+        return false;
+    }
+    if (route < Route::Collection || route > Route::ReturnToSender) {
+        cout << "Choose a service route to resume the parcel.\n";
         return false;
     }
     ServiceRequest request;
@@ -253,11 +349,22 @@ bool ParcelModule::resumeParcel(const string& id, Route route, ServiceModule& se
 
 bool ParcelModule::updateStatus(const string& id, ParcelStatus status, const ServiceModule& services) {
     Parcel* parcel = records.find(id);
-    if (parcel == nullptr || isTerminal(parcel->status)
-        || services.hasActiveRequestForParcel(id)
-        || (status != ParcelStatus::Missing && status != ParcelStatus::OnHold
-            && status != ParcelStatus::Cancelled)) {
-        cout << "Invalid status change. Active requests must be resolved first.\n";
+    if (parcel == nullptr) {
+        cout << "Parcel not found.\n";
+        return false;
+    }
+    if (isTerminal(parcel->status)) {
+        cout << "Completed parcels cannot change status.\n";
+        return false;
+    }
+    if (services.hasActiveRequestForParcel(id)) {
+        cout << "Resolve the active request before changing parcel status.\n";
+        return false;
+    }
+    bool allowedStatus = status == ParcelStatus::Missing
+        || status == ParcelStatus::OnHold || status == ParcelStatus::Cancelled;
+    if (!allowedStatus) {
+        cout << "Staff can only set Missing, On hold or Cancelled here.\n";
         return false;
     }
     parcel->status = status;

@@ -39,7 +39,9 @@ public:
     bool dequeue(string& id);
     bool peek(string& id) const;
     bool remove(const string& id);
-    bool empty() const { return front == nullptr; }
+    bool empty() const {
+        return front == nullptr;
+    }
     void display() const;
 private:
     struct Node {
