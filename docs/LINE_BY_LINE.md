@@ -11,7 +11,7 @@ Every physical line of each listed source file has an entry, including blank lin
 | `src/task2.cpp` | 402 | [Read](lines/src_task2.cpp.md) |
 | `include/task3.hpp` | 50 | [Read](lines/include_task3.hpp.md) |
 | `src/task3.cpp` | 275 | [Read](lines/src_task3.cpp.md) |
-| `src/main.cpp` | 397 | [Read](lines/src_main.cpp.md) |
+| `src/main.cpp` | 398 | [Read](lines/src_main.cpp.md) |
 | `tests/system_tests.cpp` | 346 | [Read](lines/tests_system_tests.cpp.md) |
 | `CMakeLists.txt` | 32 | [Read](lines/CMakeLists.txt.md) |
 | `build.ps1` | 21 | [Read](lines/build.ps1.md) |

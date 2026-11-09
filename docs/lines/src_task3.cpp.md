@@ -2,7 +2,7 @@
 
 Source: [src/task3.cpp](../../src/task3.cpp)
 
-Physical lines: 275; SHA-256 (LF text): `2b708e7c2012795795f955f83b368a3910cb292a321825a6d1268d7ed01b1560`.
+Physical lines: 275; SHA-256 (LF text): `4b3ad58c32df0d060fef99fadf89b13742ffe940c53a584717cfdd247ff30d5c`.
 
 The explanations accompany the exact lines below. Pointer algorithms and cross-module state rules are expanded in the [technical guide](../TECHNICAL_GUIDE.md).
 
@@ -199,7 +199,7 @@ The explanations accompany the exact lines below. Pointer algorithms and cross-m
 | 189 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
 | 190 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
 | 191 | <code>bool ResourceModule::canReleaseRequest(const string&amp; id) const {</code> | Define `ResourceModule::canReleaseRequest`. Validate both assignment directions, compatible type and active state before release. Pending unassigned work needs no physical release. |
-| 192 | <code>    const ServiceRequest* request = services.findRequest(id);</code> | Create local `request` using the type and initializer shown. It stores the intermediate value for this operation and is destroyed on leaving scope. |
+| 192 | <code>    const ServiceRequest* request = services.requests.find(id);</code> | Create local `request` using the type and initializer shown. It stores the intermediate value for this operation and is destroyed on leaving scope. |
 | 193 | <code>    if (request == nullptr) {</code> | Test `request == nullptr`. Run the following guarded block only when true. |
 | 194 | <code>        return false;</code> | Return failure or a false predicate without claiming success. |
 | 195 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
@@ -229,7 +229,7 @@ The explanations accompany the exact lines below. Pointer algorithms and cross-m
 | 219 | <code>    if (!canReleaseRequest(id)) {</code> | Test `!canReleaseRequest(id)`. Run the following guarded block only when true. |
 | 220 | <code>        return false;</code> | Return failure or a false predicate without claiming success. |
 | 221 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 222 | <code>    const ServiceRequest* request = services.findRequest(id);</code> | Create local `request` using the type and initializer shown. It stores the intermediate value for this operation and is destroyed on leaving scope. |
+| 222 | <code>    const ServiceRequest* request = services.requests.find(id);</code> | Create local `request` using the type and initializer shown. It stores the intermediate value for this operation and is destroyed on leaving scope. |
 | 223 | <code>    if (request-&gt;resourceId.empty()) {</code> | Test `request->resourceId.empty()`. Run the following guarded block only when true. |
 | 224 | <code>        return true; // cancelling a pending request needs no resource</code> | Return success or a true predicate to the caller. Comment: cancelling a pending request needs no resource |
 | 225 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |

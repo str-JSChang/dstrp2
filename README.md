@@ -60,7 +60,7 @@ The GCC/PowerShell route was tested here; CMake was not installed on this machin
 
 Open [the offline visual guide](docs/VISUAL_GUIDE.html) in your browser for animated,
 step-by-step walkthroughs, interactive data structures, validation examples and all
-16 documentation files in one searchable HTML file. It works on Linux and Windows
+documentation files in one searchable HTML file. It works on Linux and Windows
 without a server or internet connection. After editing the Markdown docs, regenerate
 it with `python docs/build_visual_guide.py` (requires `pip install markdown`).
 

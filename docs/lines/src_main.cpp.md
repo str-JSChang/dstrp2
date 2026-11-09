@@ -2,7 +2,7 @@
 
 Source: [src/main.cpp](../../src/main.cpp)
 
-Physical lines: 397; SHA-256 (LF text): `c6e7424f5e86cdec4eb415be1de8effa6286c24afeaeddd8fb74201eca68d341`.
+Physical lines: 398; SHA-256 (LF text): `94c1d4bd730a77c63da296c84e054885b6a1e2f62beaf6566c9a5f3f7ca78e5c`.
 
 The explanations accompany the exact lines below. Pointer algorithms and cross-module state rules are expanded in the [technical guide](../TECHNICAL_GUIDE.md).
 
@@ -396,12 +396,13 @@ The explanations accompany the exact lines below. Pointer algorithms and cross-m
 | 386 | <code>    return 0;</code> | Return normal exit/back/EOF value for this function. |
 | 387 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
 | 388 | <code>(blank)</code> | Blank line separating logical parts for readability; no runtime action. |
-| 389 | <code>int main() {</code> | Define `main`. Program entry point; execute the system/test suite and translate exceptions into an error message and nonzero exit code. |
-| 390 | <code>    try {</code> | Begin an exception-protected operation whose failures are handled by the following catch. |
-| 391 | <code>        return runSystem();</code> | Return the value of `runSystem()` to the caller. This ends the function once its full return expression is evaluated. |
-| 392 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 393 | <code>    catch (const exception&amp; error) {</code> | Handle the selected exception; perform rollback or restore captured output before reporting the failure. |
-| 394 | <code>        cerr &lt;&lt; &quot;System stopped: &quot; &lt;&lt; error.what() &lt;&lt; &#x27;\n&#x27;;</code> | Write/continue the error message to standard error. |
-| 395 | <code>        return 1;</code> | Return a nonzero failure exit code. |
-| 396 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
-| 397 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 389 | <code>// Start the console system and report unexpected runtime errors.</code> | Comment explaining intent: Start the console system and report unexpected runtime errors. |
+| 390 | <code>int main() {</code> | Define `main`. Program entry point; execute the system/test suite and translate exceptions into an error message and nonzero exit code. |
+| 391 | <code>    try {</code> | Begin an exception-protected operation whose failures are handled by the following catch. |
+| 392 | <code>        return runSystem();</code> | Return the value of `runSystem()` to the caller. This ends the function once its full return expression is evaluated. |
+| 393 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 394 | <code>    catch (const exception&amp; error) {</code> | Handle the selected exception; perform rollback or restore captured output before reporting the failure. |
+| 395 | <code>        cerr &lt;&lt; &quot;System stopped: &quot; &lt;&lt; error.what() &lt;&lt; &#x27;\n&#x27;;</code> | Write/continue the error message to standard error. |
+| 396 | <code>        return 1;</code> | Return a nonzero failure exit code. |
+| 397 | <code>    }</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
+| 398 | <code>}</code> | End the current block/function/namespace; braces control scope and local object lifetime. |
